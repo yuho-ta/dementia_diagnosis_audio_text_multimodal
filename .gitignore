@@ -1,0 +1,39 @@
+./ablations
+./base_logs
+./logs
+./wandb
+
+# Ignore all files in the logs directory
+logs/*
+# Ignore all files in the base_logs directory
+base_logs/*
+# Ignore all files in the ablative_logs directory
+ablations/*
+# Ignore all files in the wandb directory
+wandb/*
+
+docker.sh
+
+# Ignore pycache files
+__pycache__/*
+*/__pycache__/*
+# Ignore all .pyc files
+*.pyc
+# Ignore all .pyo files
+*.pyo
+# Ignore all .pyd files
+*.pyd
+# Ignore all .pdb files
+*.pdb
+# Ignore all .egg files
+*.egg
+# Ignore all .egg-info directories
+*.egg-info/
+# Ignore all .whl files
+*.whl
+# Ignore all .tar files
+*.tar
+# Ignore all .zip files
+*.zip
+# Ignore all .tar.gz files
+*.tar.gz

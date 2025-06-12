@@ -1,4 +1,11 @@
-<h1 align="center">CogniAlign: Word-Level Multimodal Speech Alignment with Gated Cross-Attention for Alzheimer’s Detection</h1>
+<h1 align="center">CogniAlign</h1>
+
+<p align="center">
+  CogniAlign: Word-Level Multimodal Speech Alignment with Gated Cross-Attention for Alzheimer’s Detection
+  <br>
+  <a href="https://arxiv.org/abs/2506.01890"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-2506.01890-b31b1b.svg"></a> 
+</p>
+
 
 ## Overview
 

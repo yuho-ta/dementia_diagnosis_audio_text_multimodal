@@ -37,3 +37,12 @@ __pycache__/*
 *.zip
 # Ignore all .tar.gz files
 *.tar.gz
+
+ADReSSo21-diagnosis-test/*
+ADReSSo21-diagnosis-train/*
+imgs/*
+modules/__pycache__/*
+modules/logs/*
+modules/wandb/*
+modules/venv/*
+modules/dataset/*

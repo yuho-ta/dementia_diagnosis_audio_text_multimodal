@@ -17,9 +17,9 @@ model:
   n_heads: 12
   num_classes: 1
   hidden_mlp_size: 256
-  textual_model: 'distil'
-  audio_model: 'egemaps'
-  pauses: False
-  fusion: 'cross'
+  textual_model: 'distilbert'
+  audio_model: 'wav2vec2'
+  pauses: True
+  fusion: 'gatedcross'
 
 model_name: ''

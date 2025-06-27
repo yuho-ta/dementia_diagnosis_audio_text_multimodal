@@ -1,42 +1,62 @@
+# =============================
+# マルチモーダル融合モデル群
+# - 音声・テキスト埋め込みの融合手法
+# - クロスアテンション、双方向融合、要素ごと融合
+# - アテンションプーリング、ゲート機構
+# - ResNet音声特徴抽出器
+# =============================
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 
 class AttnPooling(nn.Module):
+    """
+    アテンションプーリング層
+    シーケンスの各要素に重みを付けて平均を取る
+    """
     def __init__(self, dim):
         super().__init__()
-        self.attn = nn.Linear(dim, 1)
+        self.attn = nn.Linear(dim, 1)  # アテンションスコアを計算する線形層
 
     def forward(self, x, mask=None):
         """
         Args:
-            x: Tensor of shape (B, T, D)
-            mask: (optional) Bool tensor of shape (B, T), where True = keep, False = ignore
+            x: 形状 (B, T, D) のテンソル（バッチサイズ、時間長、次元数）
+            mask: (オプション) 形状 (B, T) のブールテンソル、True=保持、False=無視
         Returns:
-            Pooled tensor of shape (B, D)
+            形状 (B, D) のプールされたテンソル
         """
-        # Compute raw attention scores
+        # 生のアテンションスコアを計算
         scores = self.attn(x).squeeze(-1)  # (B, T)
 
         if mask is not None:
-            scores = scores.masked_fill(~mask, float('-inf'))  # mask out padding tokens
+            # パディングトークンをマスクアウト
+            scores = scores.masked_fill(~mask, float('-inf'))
 
+        # ソフトマックスで重みを正規化
         weights = F.softmax(scores, dim=1).unsqueeze(-1)  # (B, T, 1)
+        # 重み付き平均を計算
         pooled = torch.sum(weights * x, dim=1)  # (B, D)
         return pooled
     
 
 class GatedAttnPooling(nn.Module):
+    """
+    ゲート付きアテンションプーリング層
+    アテンションスコアにゲート機構を組み合わせたプーリング
+    """
     def __init__(self, dim):
         super().__init__()
-        self.attn = nn.Linear(dim, 1)
-        self.gate = nn.Linear(dim, 1)
+        self.attn = nn.Linear(dim, 1)  # アテンションスコア
+        self.gate = nn.Linear(dim, 1)  # ゲートスコア
 
     def forward(self, x, mask=None):
-        attn_score = self.attn(x).squeeze(-1)
-        gate_score = torch.sigmoid(self.gate(x)).squeeze(-1)
+        attn_score = self.attn(x).squeeze(-1)  # アテンションスコア
+        gate_score = torch.sigmoid(self.gate(x)).squeeze(-1)  # ゲートスコア（0-1）
 
+        # アテンションスコアとゲートスコアを組み合わせ
         scores = attn_score * gate_score  # (B, T)
 
         if mask is not None:
@@ -47,6 +67,10 @@ class GatedAttnPooling(nn.Module):
 
 
 class ResidualBlock(nn.Module):
+    """
+    ResNetの残差ブロック
+    2つの畳み込み層とスキップ接続を持つ
+    """
     def __init__(self, in_c, out_c, dropout=0.1):
         super().__init__()
         self.conv1 = nn.Conv2d(in_c, out_c, kernel_size=3, padding=1, bias=False)
@@ -57,62 +81,74 @@ class ResidualBlock(nn.Module):
         self.conv2 = nn.Conv2d(out_c, out_c, kernel_size=3, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(out_c)
 
-        # Shortcut
+        # スキップ接続（入力と出力のチャンネル数が異なる場合は1x1畳み込み）
         self.shortcut = (
             nn.Conv2d(in_c, out_c, kernel_size=1, bias=False)
             if in_c != out_c else nn.Identity()
         )
 
     def forward(self, x):
-        identity = self.shortcut(x)
+        identity = self.shortcut(x)  # スキップ接続
         out = self.relu(self.bn1(self.conv1(x)))
         out = self.dropout(out)
         out = self.bn2(self.conv2(out))
-        out += identity
+        out += identity  # 残差接続
         return self.relu(out)
 
 class ResNetAudio(nn.Module):
+    """
+    音声特徴抽出用のResNet
+    メルスペクトログラムやeGeMAPS特徴量を処理
+    """
     def __init__(self, in_channels=1, out_channels=768, dropout=0.1):
         super().__init__()
 
+        # 初期特徴抽出層
         self.stem = nn.Sequential(
             nn.Conv2d(in_channels, 32, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True)
         )
 
+        # 残差ブロック層
         self.layer1 = ResidualBlock(32, 64, dropout)
         self.layer2 = ResidualBlock(64, 128, dropout)
         self.layer3 = ResidualBlock(128, out_channels, dropout)
 
-        self.global_pool = nn.AdaptiveAvgPool2d((None, 1))  # Keep time dim, pool freq
+        # グローバルプーリング（時間次元は保持、周波数次元をプール）
+        self.global_pool = nn.AdaptiveAvgPool2d((None, 1))
 
     def forward(self, x):
         """
         Args:
-            x: Tensor of shape (B, T, F) — time, frequency (e.g., Mel spectrogram)
+            x: 形状 (B, T, F) のテンソル — 時間、周波数（例：メルスペクトログラム）
         Returns:
-            Tensor of shape (B, T, out_channels)
+            形状 (B, T, out_channels) のテンソル
         """
-        x = x.unsqueeze(1)  # (B, 1, T, F)
+        x = x.unsqueeze(1)  # (B, 1, T, F) - チャンネル次元を追加
         x = self.stem(x)
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.global_pool(x)  # (B, C, T, 1)
-        x = x.squeeze(-1).transpose(1, 2)  # (B, T, C)
+        x = x.squeeze(-1).transpose(1, 2)  # (B, T, C) - 形状を調整
         return x
 
 
 class CrossAttentionEncoderLayer(nn.Module):
+    """
+    クロスアテンションTransformerエンコーダー層
+    2つのモーダル間でクロスアテンションを実行
+    """
     def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1, activation=nn.ReLU()):
-        """Cross-Attention Transformer Encoder Layer."""
         super(CrossAttentionEncoderLayer, self).__init__()
 
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
+        # マルチヘッドクロスアテンション
         self.cross_attention = nn.MultiheadAttention(d_model, nhead, dropout=dropout, batch_first=True)
 
+        # フィードフォワードネットワーク
         self.feedforward = nn.Sequential(
             nn.Linear(d_model, dim_feedforward),
             activation,
@@ -124,27 +160,35 @@ class CrossAttentionEncoderLayer(nn.Module):
         self.dropout2 = nn.Dropout(dropout)
 
     def forward(self, src, memory, src_mask=None, src_key_padding_mask=None):
-        """Forward pass of the cross-attention layer."""
+        """
+        クロスアテンション層の順伝播
+        Args:
+            src: クエリ（例：音声）
+            memory: キー/バリュー（例：テキスト）
+        """
 
         # Pre-Normalization
         src = self.norm1(src)
         memory = self.norm1(memory)
 
-        # Cross-Attention (Query: src, Key/Value: memory)
+        # クロスアテンション（クエリ: src, キー/バリュー: memory）
         attn_output, _ = self.cross_attention(src, memory, memory, attn_mask=src_mask, key_padding_mask=src_key_padding_mask)
-        src = src + self.dropout1(attn_output)  # Residual Connection
+        src = src + self.dropout1(attn_output)  # 残差接続
 
-        # Feed-Forward Network
+        # フィードフォワードネットワーク
         src = self.norm2(src)
-        src = src + self.dropout2(self.feedforward(src))  # Residual Connection
+        src = src + self.dropout2(self.feedforward(src))  # 残差接続
 
         return src
     
 
 
 class GatedCrossAttentionFusion(nn.Module):
+    """
+    ゲート付き残差クロスアテンション融合層
+    クロスアテンションの出力にゲート機構を適用
+    """
     def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1, activation=nn.ReLU()):
-        """Gated Residual Cross-Attention Fusion Layer."""
         super().__init__()
 
         self.norm1 = nn.LayerNorm(d_model)
@@ -159,6 +203,7 @@ class GatedCrossAttentionFusion(nn.Module):
             nn.Linear(dim_feedforward, d_model),
         )
 
+        # ゲート機構（入力とアテンション出力を組み合わせてゲートを計算）
         self.gate = nn.Sequential(
             nn.Linear(d_model * 2, d_model),
             nn.Sigmoid()
@@ -169,17 +214,16 @@ class GatedCrossAttentionFusion(nn.Module):
 
     def forward(self, src, memory, src_mask=None, src_key_padding_mask=None):
         """
-        Cross attention: src queries memory.
+        クロスアテンション: srcがmemoryにクエリを送る
         Args:
-            src: Tensor (B, T, d_model) — query (e.g., audio)
-            memory: Tensor (B, T, d_model) — key/value (e.g., text)
-            src_mask: Optional attention mask
-            src_key_padding_mask: Optional padding mask
+            src: テンソル (B, T, d_model) — クエリ（例：音声）
+            memory: テンソル (B, T, d_model) — キー/バリュー（例：テキスト）
+            src_mask: オプションのアテンションマスク
+            src_key_padding_mask: オプションのパディングマスク
         Returns:
-            Tensor (B, T, d_model): Fused output
+            テンソル (B, T, d_model): 融合された出力
         """
-
-        # Cross-attention with pre-norm
+        # Pre-norm付きクロスアテンション
         src_norm = self.norm1(src)
         memory_norm = self.norm1(memory)
 
@@ -193,31 +237,36 @@ class GatedCrossAttentionFusion(nn.Module):
 
         attn_output = self.dropout1(attn_output)
 
-        # Gated fusion
+        # ゲート融合
         gate_input = torch.cat([src, attn_output], dim=-1)  # (B, T, 2*d_model)
         gate = self.gate(gate_input)  # (B, T, d_model)
-        fused = src + gate * attn_output  # Gated residual connection
+        fused = src + gate * attn_output  # ゲート付き残差接続
 
-        # Feed-forward with post-norm
+        # Post-norm付きフィードフォワード
         fused = self.norm2(fused)
-        fused = fused + self.dropout2(self.feedforward(fused))  # Residual
+        fused = fused + self.dropout2(self.feedforward(fused))  # 残差接続
 
         return fused
 
 class CrossAttentionTransformerEncoder(nn.Module):
+    """
+    クロスアテンションTransformerエンコーダー
+    音声とテキストのクロスアテンション融合
+    """
     def __init__(self, config):
-        """Transformer Encoder with Cross-Attention."""
         super(CrossAttentionTransformerEncoder, self).__init__()
 
         self.num_layers = config.n_layers
         self.model_name = config.model_name
         self.config = config
 
+        # メルスペクトログラムやeGeMAPS用の特徴抽出器
         if 'mel' in self.model_name or 'egemaps' in self.model_name:
             self.mel_extractor = ResNetAudio(in_channels=1, out_channels=config.hidden_size, dropout=config.dropout)
 
-
+        # 融合方法に応じてレイヤーを選択
         if 'gated' in config.fusion:
+            # ゲート付きクロスアテンション層
             self.layers = nn.ModuleList([
                 GatedCrossAttentionFusion(
                     d_model=config.hidden_size,
@@ -227,6 +276,7 @@ class CrossAttentionTransformerEncoder(nn.Module):
                 ) for _ in range(config.n_layers)
             ])
         else:
+            # 通常のクロスアテンション層
             self.layers = nn.ModuleList([
                 CrossAttentionEncoderLayer(
                     d_model=config.hidden_size,
@@ -236,7 +286,7 @@ class CrossAttentionTransformerEncoder(nn.Module):
                 ) for _ in range(config.n_layers)
             ])
 
-        # Add LayerNorm between layers
+        # レイヤー間のLayerNorm
         self.norm_layers = nn.ModuleList([
             nn.LayerNorm(config.hidden_size) for _ in range(config.n_layers - 1)
         ])
@@ -244,11 +294,13 @@ class CrossAttentionTransformerEncoder(nn.Module):
         self.dropout = nn.Dropout(config.dropout)
         self.pooling = config.pooling
 
+        # プーリング戦略の設定
         if config.pooling == 'attn':
             self.attn_pooling = AttnPooling(config.hidden_size)
         elif config.pooling == 'gatedattn':
             self.attn_pooling = GatedAttnPooling(config.hidden_size)
 
+        # 分類器
         self.classifier = nn.Sequential(
             nn.LayerNorm(config.hidden_size),
             nn.Dropout(config.dropout),
@@ -258,38 +310,44 @@ class CrossAttentionTransformerEncoder(nn.Module):
         )
 
     def forward(self, features, mask=None, key_padding_mask=None):
-        """Forward pass for multi-layer cross-attention transformer encoder."""
+        """
+        マルチレイヤークロスアテンションTransformerエンコーダーの順伝播
+        """
         
         src, memory = features
 
         audio_model = self.model_name.split('_')[1] if self.config.audio_model != '' else ''
 
+        # 音声特徴抽出（必要に応じて）
         if 'mel' == audio_model or 'egemaps' == audio_model:
             src = self.mel_extractor(src)
         elif 'mel' == audio_model or 'egemaps' == audio_model:
             memory = self.mel_extractor(memory)
 
-        # Iterate over layers with normalization in between
+        # レイヤーを順次適用（レイヤー間で正規化）
         for i, layer in enumerate(self.layers):
             src = layer(src, memory, src_mask=mask, src_key_padding_mask=key_padding_mask)
-            if i < len(self.norm_layers):  # Apply normalization between layers
+            if i < len(self.norm_layers):  # レイヤー間で正規化を適用
                 src = self.norm_layers[i](src)
                 src = self.dropout(src)
 
-        # Pooling strategy
+        # プーリング戦略
         if self.pooling == 'mean':
-            src = src.mean(dim=1)
+            src = src.mean(dim=1)  # 時間次元で平均
         elif self.pooling == 'cls':
-            src = src[:, 0, :]
+            src = src[:, 0, :]  # 最初のトークン（CLS）
         elif 'attn' in self.pooling:
-            src = self.attn_pooling(src, mask=mask)
+            src = self.attn_pooling(src, mask=mask)  # アテンションプーリング
 
         return self.classifier(src)
     
 
 class BidirectionalCrossAttentionTransformerEncoder(nn.Module):
+    """
+    双方向クロスアテンションTransformerエンコーダー
+    音声→テキスト、テキスト→音声の両方向でクロスアテンション
+    """
     def __init__(self, config):
-        """Transformer Encoder with Cross-Attention."""
         super(BidirectionalCrossAttentionTransformerEncoder, self).__init__()
 
         self.num_layers = config.n_layers
@@ -297,11 +355,13 @@ class BidirectionalCrossAttentionTransformerEncoder(nn.Module):
         self.fusion = config.fusion
         self.config = config
 
+        # メルスペクトログラムやeGeMAPS用の特徴抽出器
         if 'mel' in self.model_name or 'egemaps' in self.model_name:
             self.mel_extractor = ResNetAudio(in_channels=1, out_channels=config.hidden_size, dropout=config.dropout)
         
-
+        # 双方向の融合方法に応じてレイヤーを選択
         if 'gated' in config.fusion:
+            # ゲート付きクロスアテンション層（音声→テキスト）
             self.layers_1 = nn.ModuleList([
                 GatedCrossAttentionFusion(
                     d_model=config.hidden_size,
@@ -311,6 +371,7 @@ class BidirectionalCrossAttentionTransformerEncoder(nn.Module):
                 ) for _ in range(config.n_layers)
             ])
 
+            # ゲート付きクロスアテンション層（テキスト→音声）
             self.layers_2 = nn.ModuleList([
                 GatedCrossAttentionFusion(
                     d_model=config.hidden_size,
@@ -320,6 +381,7 @@ class BidirectionalCrossAttentionTransformerEncoder(nn.Module):
                 ) for _ in range(config.n_layers)
             ])
         else:
+            # 通常のクロスアテンション層（音声→テキスト）
             self.layers_1 = nn.ModuleList([
                 CrossAttentionEncoderLayer(
                     d_model=config.hidden_size,
@@ -329,6 +391,7 @@ class BidirectionalCrossAttentionTransformerEncoder(nn.Module):
                 ) for _ in range(config.n_layers)
             ])
 
+            # 通常のクロスアテンション層（テキスト→音声）
             self.layers_2 = nn.ModuleList([
                 CrossAttentionEncoderLayer(
                     d_model=config.hidden_size,
@@ -338,8 +401,7 @@ class BidirectionalCrossAttentionTransformerEncoder(nn.Module):
                 ) for _ in range(config.n_layers)
             ])
 
-        
-        # Add LayerNorm between layers
+        # レイヤー間のLayerNorm（両方向）
         self.norm_layers_1 = nn.ModuleList([
             nn.LayerNorm(config.hidden_size) for _ in range(config.n_layers - 1)
         ])
@@ -351,6 +413,7 @@ class BidirectionalCrossAttentionTransformerEncoder(nn.Module):
         self.dropout = nn.Dropout(config.dropout)
         self.pooling = config.pooling
 
+        # 融合方法に応じて分類器の入力サイズを調整
         init_mlp_size = config.hidden_size * 2 if 'concat' in self.fusion else config.hidden_size
 
         self.classifier = nn.Sequential(
@@ -362,52 +425,56 @@ class BidirectionalCrossAttentionTransformerEncoder(nn.Module):
         )
 
     def forward(self, features, mask=None, key_padding_mask=None):
-        """Forward pass for multi-layer cross-attention transformer encoder."""
+        """
+        双方向クロスアテンションTransformerエンコーダーの順伝播
+        """
         
         src, memory = features
 
         audio_model = self.model_name.split('_')[1] if self.config.audio_model != '' else ''
 
+        # 音声特徴抽出（必要に応じて）
         if 'mel' == audio_model or 'egemaps' == audio_model:
             src = self.mel_extractor(src)
         elif 'mel' == audio_model or 'egemaps' == audio_model:
             memory = self.mel_extractor(memory)
 
-        # Copy src into src1 tensor
+        # 音声→テキスト方向の処理
         src1 = src.clone()
         memory1 = memory.clone()
 
-        # First embeddings
+        # 第1方向の埋め込み（音声がテキストに注意）
         for i, layer in enumerate(self.layers_1):
             src1 = layer(src1, memory1, src_mask=mask, src_key_padding_mask=key_padding_mask)
-            if i < len(self.norm_layers_1):  # Apply normalization between layers
+            if i < len(self.norm_layers_1):  # レイヤー間で正規化を適用
                 src1 = self.norm_layers_1[i](src1)
                 src1 = self.dropout(src1)
         
-        # Second embeddings
+        # テキスト→音声方向の処理
         src2 = memory.clone()
         memory2 = src.clone()
 
+        # 第2方向の埋め込み（テキストが音声に注意）
         for i, layer in enumerate(self.layers_2):
             src2 = layer(src2, memory2, src_mask=mask, src_key_padding_mask=key_padding_mask)
-            if i < len(self.norm_layers_2):  # Apply normalization between layers
+            if i < len(self.norm_layers_2):  # レイヤー間で正規化を適用
                 src2 = self.norm_layers_2[i](src2)
                 src2 = self.dropout(src2)
 
-        # Fuse src1 and src2
+        # src1とsrc2を融合
 
         if 'concat' in self.fusion:
-            src = torch.cat((src1, src2), dim=2)
+            src = torch.cat((src1, src2), dim=2)  # 連結
         elif 'sum' in self.fusion:
-            src = src1 + src2
+            src = src1 + src2  # 加算
         elif 'mul' in self.fusion:
-            src = src1 * src2
+            src = src1 * src2  # 要素ごと乗算
         elif 'mean' in self.fusion:
-            src = (src1 + src2) / 2
+            src = (src1 + src2) / 2  # 平均
         else:
-            src = src1 + src2
+            src = src1 + src2  # デフォルトは加算
             
-        # Pooling strategy
+        # プーリング戦略
         if self.pooling == 'mean':
             src = src.mean(dim=1)
         elif self.pooling == 'cls':
@@ -417,20 +484,25 @@ class BidirectionalCrossAttentionTransformerEncoder(nn.Module):
 
 
 class ElementWiseFusionEncoder(nn.Module):
+    """
+    要素ごと融合エンコーダー
+    音声とテキストを要素ごとに融合してからTransformerで処理
+    """
     def __init__(self, config):
-        """Transformer Encoder."""
         super(ElementWiseFusionEncoder, self).__init__()
 
         self.model_name = config.model_name
         self.fusion = config.fusion
         self.config = config
 
+        # 融合方法に応じて隠れ層サイズを調整
         hidden_size = config.hidden_size * 2 if self.fusion == 'concat' else config.hidden_size
 
-
+        # メルスペクトログラムやeGeMAPS用の特徴抽出器
         if 'mel' in self.model_name or 'egemaps' in self.model_name:
             self.mel_extractor = ResNetAudio(in_channels=1, out_channels=config.hidden_size, dropout=config.dropout)
         
+        # Transformerエンコーダー
         self.encoder = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
                 d_model=hidden_size, 
@@ -444,6 +516,7 @@ class ElementWiseFusionEncoder(nn.Module):
 
         self.pooling = config.pooling
         
+        # 分類器
         self.classifier = nn.Sequential(
             nn.LayerNorm(hidden_size),
             nn.Dropout(config.dropout),
@@ -453,33 +526,38 @@ class ElementWiseFusionEncoder(nn.Module):
         )
         
     def forward(self, features, mask=None, key_padding_mask=None):
-        """Forward pass for multi-layer transformer encoder."""
+        """
+        要素ごと融合エンコーダーの順伝播
+        """
 
         src, memory = features
 
         audio_model = self.model_name.split('_')[1] if self.config.audio_model != '' else ''
 
+        # 音声特徴抽出（必要に応じて）
         if 'mel' == audio_model or 'egemaps' == audio_model:
             src = self.mel_extractor(src)
         elif 'mel' == audio_model or 'egemaps' == audio_model:
             memory = self.mel_extractor(memory)
 
+        # 要素ごとの融合方法
         if self.fusion == 'concat':
-            features = torch.cat((src, memory), dim=2)
+            features = torch.cat((src, memory), dim=2)  # 連結
         elif self.fusion == 'selfattn':
-            src = src.mean(dim=1)
+            src = src.mean(dim=1)  # 時間次元で平均
             memory = memory.mean(dim=1)
-            features = torch.stack((src, memory), dim=1)
+            features = torch.stack((src, memory), dim=1)  # スタック
         elif self.fusion == 'mean':
-            features = (src + memory) / 2
+            features = (src + memory) / 2  # 平均
         elif self.fusion == 'sum':
-            features = src + memory
+            features = src + memory  # 加算
         elif self.fusion == 'mul':
-            features = src * memory
+            features = src * memory  # 要素ごと乗算
         
+        # Transformerエンコーダーで処理
         features = self.encoder(features, src_key_padding_mask=key_padding_mask)
                 
-        # Pooling strategy
+        # プーリング戦略
         if self.pooling == 'mean':
             features = features.mean(dim=1)
         elif self.pooling == 'cls':
@@ -490,15 +568,20 @@ class ElementWiseFusionEncoder(nn.Module):
 
 
 class MyTransformerEncoder(nn.Module):
+    """
+    単一モーダル用Transformerエンコーダー
+    音声またはテキストの単一モーダルを処理
+    """
     def __init__(self, config):
-        """Transformer Encoder."""
         super(MyTransformerEncoder, self).__init__()
 
         self.model_name = config.model_name
 
+        # メルスペクトログラムやeGeMAPS用の特徴抽出器
         if 'mel' in self.model_name or 'egemaps' in self.model_name:
             self.mel_extractor = ResNetAudio(in_channels=1, out_channels=config.hidden_size)
         
+        # Transformerエンコーダー
         self.encoder = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
                 d_model=config.hidden_size, 
@@ -512,6 +595,7 @@ class MyTransformerEncoder(nn.Module):
 
         self.pooling = config.pooling
         
+        # 分類器
         self.classifier = nn.Sequential(
             nn.LayerNorm(config.hidden_size),
             nn.Dropout(config.dropout),
@@ -521,17 +605,21 @@ class MyTransformerEncoder(nn.Module):
         )
         
     def forward(self, features, mask=None, key_padding_mask=None):
-        """Forward pass for multi-layer transformer encoder."""
+        """
+        単一モーダルTransformerエンコーダーの順伝播
+        """
 
+        # 音声特徴抽出（必要に応じて）
         if 'mel' in self.model_name or 'egemaps' in self.model_name:
             features = self.mel_extractor(features)
         
+        # Transformerエンコーダーで処理
         features = self.encoder(features, src_key_padding_mask=key_padding_mask)
                 
-        # Pooling strategy
+        # プーリング戦略
         if self.pooling == 'mean':
-            features = features.mean(dim=1)
+            features = features.mean(dim=1)  # 時間次元で平均
         elif self.pooling == 'cls':
-            features = features[:, 0, :]
+            features = features[:, 0, :]  # 最初のトークン
         
         return self.classifier(features)

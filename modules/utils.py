@@ -137,9 +137,9 @@ def train(model, train_dataloader, valid_dataloader, lossfn, optimizer, lr_sched
         best_value: 最良の検証精度
         rest_best_values: 最良のその他の指標
     """
-    # Weights & Biasesの初期化
-    wandb.init(project="WordLevelFusion", config={"epochs": num_epochs})
-    wandb.watch(model)
+    # Weights & Biasesの初期化はmain関数で行うため、ここではコメントアウト
+    # wandb.init(project="WordLevelFusion", config={"epochs": num_epochs})
+    # wandb.watch(model)
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
@@ -240,20 +240,35 @@ def evaluation(model, dataloader, lossfn, log, test=False):
         log: ログファイル
         test: テストモードフラグ
     Returns:
-        accuracy: 精度
-        [f1, recall, precision]: その他の指標
+        accuracy: 精度 (MMSEラベルがない場合は -1.0)
+        [f1, recall, precision]: その他の指標 (MMSEラベルがない場合は [-1.0, -1.0, -1.0])
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
     model.eval()  # 評価モードに設定
     
     total_true, total_pred, total_loss = [], [], 0
+    predictions_output = [] # 予測結果を保存するためのリスト
     
+    # MMSEラベルがあるかどうかをチェック
+    has_mmse_labels = False
+    # データローダーが空でないか、かつラベルリストが空でないかを確認
+    if dataloader is not None and len(dataloader.dataset.labels) > 0:
+        # dataloader.dataset.labels の要素が全て -1 でないかを確認
+        # 最初の要素が -1 でなければMMSEラベルがあると判断
+        if dataloader.dataset.labels[0] != -1:
+            has_mmse_labels = True
+        else:
+            print("Detected dummy labels (-1) in the dataset. Skipping accuracy calculation for this evaluation.")
+
     with torch.no_grad():  # 勾配計算を無効化
         for features, labels in dataloader:
             outputs = model(features).squeeze(-1)
-            loss = lossfn(outputs, labels)
-            total_loss += loss.item()
+            
+            # MMSEラベルがある場合のみ損失を計算
+            if has_mmse_labels:
+                loss = lossfn(outputs, labels)
+                total_loss += loss.item()
             
             # 予測の計算
             probs = torch.sigmoid(outputs)
@@ -264,21 +279,43 @@ def evaluation(model, dataloader, lossfn, log, test=False):
                 print("⚠️ Warning: NaN detected in predictions! Skipping batch.")
                 continue
             
-            predictions = predictions.detach().cpu().numpy().astype(int)
-            labels = labels.detach().cpu().numpy().astype(int)
+            predictions_np = predictions.detach().cpu().numpy().astype(int)
             
-            total_true.extend(labels)
-            total_pred.extend(predictions)
+            # 予測結果を保存
+            predictions_output.extend(predictions_np)
+
+            if has_mmse_labels:
+                labels_np = labels.detach().cpu().numpy().astype(int)
+                total_true.extend(labels_np)
+                total_pred.extend(predictions_np)
     
     # 評価指標の計算
-    accuracy, f1, recall, precision = get_metrics_classification(total_true, total_pred)
-    avg_loss = total_loss / len(dataloader)
-    
-    log.write(f'Loss: {avg_loss}\nAccuracy: {accuracy}\nF1 Score: {f1}\nRecall: {recall}\nPrecision: {precision}\n')
-    # wandbに結果を記録（テストか検証かで異なるキーを使用）
-    wandb.log({"test_loss": avg_loss, "test_UAR": accuracy, "test_F1": f1} if test else {"validation_loss": avg_loss, "validation_ACC": accuracy, "validation_F1": f1})
-    
-    return accuracy, [f1, recall, precision]
+    if has_mmse_labels:
+        accuracy, f1, recall, precision = get_metrics_classification(total_true, total_pred)
+        avg_loss = total_loss / len(dataloader)
+        
+        log.write(f'Loss: {avg_loss:.4f}\nAccuracy: {accuracy:.4f}\nF1 Score: {f1:.4f}\nRecall: {recall:.4f}\nPrecision: {precision:.4f}\n')
+        # wandbに結果を記録（テストか検証かで異なるキーを使用）
+        wandb.log({"test_loss": avg_loss, "test_UAR": accuracy, "test_F1": f1} if test else {"validation_loss": avg_loss, "validation_ACC": accuracy, "validation_F1": f1})
+        
+        return accuracy, [f1, recall, precision]
+    else:
+        # MMSEラベルがない場合、精度は計算しない
+        accuracy = -1.0
+        f1 = -1.0
+        recall = -1.0
+        precision = -1.0
+        avg_loss = -1.0 # 損失も計算しない、またはダミー値
+        
+        log.write(f'Loss: N/A (No MMSE labels)\nAccuracy: N/A\nF1 Score: N/A\nRecall: N/A\nPrecision: N/A\n')
+        # wandbにはダミー値を記録する
+        wandb.log({"test_loss": avg_loss, "test_UAR": accuracy, "test_F1": f1} if test else {"validation_loss": avg_loss, "validation_ACC": accuracy, "validation_F1": f1})
+        
+        print("Predictions for test set (without MMSE labels):")
+        # 予測結果をログファイルに追記
+        log.write(f"All predictions: {predictions_output}\n") # すべての予測を出力する
+        
+        return accuracy, [f1, recall, precision]
 
 
 def get_model_statistics(model='all'):
@@ -297,7 +334,11 @@ def get_model_statistics(model='all'):
     for folder_name in folder_names:
         try:
             # フォルダ名からモデル名とプーリング方法を抽出（例: "distilbert_base_cls"）
-            model_name, pooling = folder_name.split('_')
+            # マルチモーダルの場合、フォルダ名が 'text_audio_P_fusion_pooling' のようになる可能性を考慮
+            parts = folder_name.split('_')
+            pooling = parts[-1] # 最後の要素がpooling
+            model_name = '_'.join(parts[:-1]) # それ以外がモデル名
+
         except ValueError:
             print(f"Warning: Unexpected folder name format {folder_name}, skipping.")
             continue
@@ -307,17 +348,54 @@ def get_model_statistics(model='all'):
             continue
         
         file_path = os.path.join(directory, folder_name, 'cross_fold_summary.txt')
-        
+        test_log_file_path = os.path.join(directory, folder_name, 'test_results_summary.txt') # テスト結果ログファイルを追加
+
         if not os.path.exists(file_path):
-            print(f"Warning: Missing file {file_path}")
+            print(f"Warning: Missing validation summary file {file_path}")
             continue
         
+        # テスト結果の読み込み
+        test_accuracy_list = []
+        test_f1_list = []
+        if os.path.exists(test_log_file_path):
+            try:
+                with open(test_log_file_path, "r") as test_result_file:
+                    test_lines = test_result_file.readlines()
+                    # 各foldのテスト結果をパース
+                    current_test_acc = None
+                    current_test_f1 = None
+                    for line in test_lines:
+                        if 'Test Accuracy:' in line:
+                            test_acc_str = line.split(':')[-1].strip()
+                            if test_acc_str != 'N/A': # MMSEラベルがない場合はN/Aなのでスキップ
+                                current_test_acc = float(test_acc_str) * 100
+                            else:
+                                current_test_acc = np.nan # N/Aの場合はNaNとして扱う
+                        elif 'Test F1:' in line:
+                            test_f1_str = line.split(':')[-1].strip()
+                            if test_f1_str != 'N/A':
+                                current_test_f1 = float(test_f1_str) * 100
+                            else:
+                                current_test_f1 = np.nan
+                        
+                        # Foldの終わり、または次のFoldの始まりでリストに追加
+                        if '-----------------------------------' in line and current_test_acc is not None and current_test_f1 is not None:
+                            test_accuracy_list.append(current_test_acc)
+                            test_f1_list.append(current_test_f1)
+                            current_test_acc = None # リセット
+                            current_test_f1 = None # リセット
+            except Exception as e:
+                print(f"Error reading test results from {test_log_file_path}: {e}")
+        else:
+            print(f"Warning: Missing test summary file {test_log_file_path}")
+
+
         try:
             with open(file_path, "r") as result_file:
                 lines = result_file.readlines()
             
             if not lines:
-                print(f"Warning: Empty file {file_path}")
+                print(f"Warning: Empty validation summary file {file_path}")
                 continue
 
             # 各foldの指標を格納
@@ -335,7 +413,7 @@ def get_model_statistics(model='all'):
                     continue
 
             if not all(metrics[key] for key in metrics):
-                print(f"Warning: Incomplete statistics in {file_path}")
+                print(f"Warning: Incomplete validation statistics in {file_path}")
                 continue
 
             # 平均と標準偏差を計算
@@ -346,11 +424,16 @@ def get_model_statistics(model='all'):
                 grouped_results[model_name] = {}
             
             # 結果を保存（平均±標準偏差の形式）
+            test_acc_mean, test_acc_std = (np.nanmean(test_accuracy_list), np.nanstd(test_accuracy_list)) if test_accuracy_list else (np.nan, np.nan)
+            test_f1_mean, test_f1_std = (np.nanmean(test_f1_list), np.nanstd(test_f1_list)) if test_f1_list else (np.nan, np.nan)
+            
             grouped_results[model_name][pooling] = (
-                round(means[0], 2), round(stds[0], 1),  # Accuracy
-                round(means[1], 2), round(stds[1], 1),  # F1
-                round(means[2], 2), round(stds[2], 1),  # Recall
-                round(means[3], 2), round(stds[3], 1)   # Precision
+                round(means[0], 2), round(stds[0], 1),   # Acc (Validation)
+                round(means[1], 2), round(stds[1], 1),   # F1 (Validation)
+                round(means[2], 2), round(stds[2], 1),   # Recall (Validation)
+                round(means[3], 2), round(stds[3], 1),   # Precision (Validation)
+                round(test_acc_mean, 2) if not np.isnan(test_acc_mean) else 'N/A', round(test_acc_std, 1) if not np.isnan(test_acc_std) else 'N/A', # Acc (Test)
+                round(test_f1_mean, 2) if not np.isnan(test_f1_mean) else 'N/A', round(test_f1_std, 1) if not np.isnan(test_f1_std) else 'N/A' # F1 (Test)
             )
             models_used.add(model_name)
         
@@ -361,14 +444,30 @@ def get_model_statistics(model='all'):
     for model_name, poolings in grouped_results.items():
         print("\n\n\\begin{table}[H]")
         print("\\centering")
-        print("\\begin{tabular}{l|cccc}")
+        # 新しい列（Test AccとTest F1）のために列数を増やす
+        print("\\begin{tabular}{l|cccc|cc}") 
         print("\\hline")
-        print("Pooling & Acc & F1 & Recall & Precision \\\\")
+        print("Pooling & Val Acc & Val F1 & Val Recall & Val Precision & Test Acc & Test F1 \\\\")
         print("\\Xhline{1pt}")
         
         for pooling in sorted(poolings.keys()):  # 一貫した順序を保証
             values = poolings[pooling]
-            print(f"{pooling}  &  {values[0]}  $\\pm$  {values[1]}  &  {values[2]}  $\\pm$  {values[3]}  &  {values[4]}  $\\pm$  {values[5]}  &  {values[6]}  $\\pm$  {values[7]} \\\\")
+            # N/A を適切に処理して出力
+            val_acc_str = f"{values[0]} $\\pm$ {values[1]}"
+            val_f1_str = f"{values[2]} $\\pm$ {values[3]}"
+            val_recall_str = f"{values[4]} $\\pm$ {values[5]}"
+            val_precision_str = f"{values[6]} $\\pm$ {values[7]}"
+            
+            test_acc_val = values[8]
+            test_acc_std = values[9]
+            test_acc_str = f"{test_acc_val} $\\pm$ {test_acc_std}" if test_acc_val != 'N/A' else 'N/A'
+
+            test_f1_val = values[10]
+            test_f1_std = values[11]
+            test_f1_str = f"{test_f1_val} $\\pm$ {test_f1_std}" if test_f1_val != 'N/A' else 'N/A'
+
+
+            print(f"{pooling}  &  {val_acc_str}  &  {val_f1_str}  &  {val_recall_str}  &  {val_precision_str} & {test_acc_str} & {test_f1_str} \\\\")
         print("\\hline")
         
         print("\\end{tabular}")

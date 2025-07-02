@@ -4,10 +4,11 @@
 # - K-Fold交差検証対応
 # - Weights & Biases（wandb）による実験管理
 # - 早期停止、学習率スケジューリング対応
+# - テストセットでの評価追加
 # =============================
 
 from dataset import get_dataloaders
-from utils import set_seed, get_config, train, save_config
+from utils import set_seed, get_config, train, save_config, evaluation # [変更点] evaluationをインポート
 from model import CrossAttentionTransformerEncoder, MyTransformerEncoder, BidirectionalCrossAttentionTransformerEncoder, ElementWiseFusionEncoder
 import torch
 import wandb
@@ -50,7 +51,7 @@ def set_up(config, train_dataloader, device, fold=0):
             model = ElementWiseFusionEncoder(config.model).to(device)
     else:
         # 単一モーダルの場合
-         model = MyTransformerEncoder(config.model).to(device)
+        model = MyTransformerEncoder(config.model).to(device)
 
     # オプティマイザーの設定（AdamW）
     optimizer = AdamW(model.parameters(), lr=config.train.learning_rate, weight_decay=config.train.weight_decay)
@@ -83,7 +84,7 @@ def set_up(config, train_dataloader, device, fold=0):
 
 def main(config):
     """
-    メイン関数：モデルの訓練と保存
+    メイン関数：モデルの訓練と保存、テストセットでの評価
     K-Fold交差検証に対応
     Args:
         config: 設定オブジェクト
@@ -98,11 +99,14 @@ def main(config):
     if config.train.cross_validation:
         # 交差検証結果のサマリーファイル
         log_file = os.path.join(log_path, 'cross_fold_summary.txt')
-        with open(log_file, "w") as log:
+        # [変更点] テスト結果を保存するファイルを追加
+        test_log_file = os.path.join(log_path, 'test_results_summary.txt') 
+
+        with open(log_file, "w") as log_cv, open(test_log_file, "w") as log_test: # [変更点] log_testファイルも開く
             # 各foldで訓練・評価を実行
             for fold in range(config.train.cross_validation_folds):
-                # 指定されたfoldのデータローダーを取得
-                train_dataloader, validation_dataloader = get_dataloaders(config, kfold_number=fold)
+                # [変更点] テストデータローダーも取得するように変更
+                train_dataloader, validation_dataloader, test_dataloader = get_dataloaders(config, kfold_number=fold, return_test_dataloader=True)
                 
                 # モデル、オプティマイザー等の設定
                 model, optimizer, lossfn, lr_scheduler = set_up(config, train_dataloader, device, fold)
@@ -114,23 +118,54 @@ def main(config):
                 )
                 
                 # 結果をログファイルに記録
-                log.write(f'Fold {fold}: Best Value = {best_value}\n')
-                log.write(f'Best F1: {rest_best_values[0]}\nBest Recall: {rest_best_values[1]}\nBest Precision: {rest_best_values[2]}\n')
+                log_cv.write(f'Fold {fold}: Best Value = {best_value}\n')
+                log_cv.write(f'Best F1: {rest_best_values[0]}\nBest Recall: {rest_best_values[1]}\nBest Precision: {rest_best_values[2]}\n')
                 
                 # モデルの保存
                 torch.save(model.state_dict(), os.path.join(log_path, f'model_fold_{fold}.pth'))
                 print(f'Model for fold {fold} saved')
-                # wandbに結果を記録
-                wandb.log({
-                    "best_value": best_value,
-                    "best_f1": rest_best_values[0],
-                    "best_recall": rest_best_values[1],
-                    "best_precision": rest_best_values[2],
-                })
+
+                # [変更点] テストセットでの評価 (MMSE CSVがない場合は精度計算をスキップ)
+                print(f"Evaluating on test set for Fold {fold}...")
+                log_test.write(f'--- Test Results for Fold {fold} ---\n')
+                
+                # test_dataloaderのラベルがダミー値（-1）かどうかで判断
+                if test_dataloader is not None and len(test_dataloader.dataset.labels) > 0 and test_dataloader.dataset.labels[0] != -1:
+                    # ラベルが存在し、ダミー値でない場合のみ精度計算を行う
+                    test_accuracy, test_rest_values = evaluation(model, test_dataloader, lossfn, log_test, test=True)
+                    print(f'Test Accuracy: {test_accuracy:.4f}, Test F1: {test_rest_values[0]:.4f}')
+                    log_test.write(f'Test Accuracy: {test_accuracy:.4f}\nTest F1: {test_rest_values[0]:.4f}\nTest Recall: {test_rest_values[1]:.4f}\nTest Precision: {test_rest_values[2]:.4f}\n')
+                    wandb.log({
+                        "best_value_validation": best_value,
+                        "best_f1_validation": rest_best_values[0],
+                        "best_recall_validation": rest_best_values[1],
+                        "best_precision_validation": rest_best_values[2],
+                        "test_accuracy": test_accuracy,
+                        "test_f1": test_rest_values[0]
+                    })
+                else:
+                    # ラベルがダミー値の場合、予測のみ行う
+                    print("Test set has no MMSE labels. Performing prediction only.")
+                    # evaluation関数が予測のみを返すように修正されているため、その結果をログに記録
+                    test_accuracy, test_rest_values = evaluation(model, test_dataloader, lossfn, log_test, test=True)
+                    # evaluation関数がN/Aを書き込むので、ここでは追加で書き込まない
+                    # wandbにもダミー値を記録
+                    wandb.log({
+                        "best_value_validation": best_value,
+                        "best_f1_validation": rest_best_values[0],
+                        "best_recall_validation": rest_best_values[1],
+                        "best_precision_validation": rest_best_values[2],
+                        "test_accuracy": test_accuracy, # -1.0 が記録される
+                        "test_f1": test_rest_values[0] # -1.0 が記録される
+                    })
+
+
+                log_test.write(f'-----------------------------------\n')
                 wandb.finish()
     else:
         # 通常の訓練（交差検証なし）
-        train_dataloader, validation_dataloader = get_dataloaders(config)
+        # [変更点] テストデータローダーも取得するように変更
+        train_dataloader, validation_dataloader, test_dataloader = get_dataloaders(config, return_test_dataloader=True)
         
         # モデル、オプティマイザー等の設定
         model, optimizer, lossfn, lr_scheduler = set_up(config, train_dataloader, device)
@@ -145,30 +180,72 @@ def main(config):
         model_save_path = os.path.join(log_path, 'model.pt')
         torch.save(model.state_dict(), model_save_path)
         print('Model saved')
+
+        # [変更点] テストセットでの評価 (MMSE CSVがない場合は精度計算をスキップ)
+        print(f"Evaluating on test set...")
+        test_log_file = os.path.join(log_path, 'test_results.txt')
+        with open(test_log_file, "w") as log_test:
+            log_test.write('--- Test Results ---\n')
+            if test_dataloader is not None and len(test_dataloader.dataset.labels) > 0 and test_dataloader.dataset.labels[0] != -1:
+                test_accuracy, test_rest_values = evaluation(model, test_dataloader, lossfn, log_test, test=True)
+                print(f'Test Accuracy: {test_accuracy:.4f}, Test F1: {test_rest_values[0]:.4f}')
+                log_test.write(f'Test Accuracy: {test_accuracy:.4f}\nTest F1: {test_rest_values[0]:.4f}\nTest Recall: {test_rest_values[1]:.4f}\nTest Precision: {test_rest_values[2]:.4f}\n')
+                wandb.log({
+                    "best_value_validation": best_value,
+                    "best_f1_validation": rest_best_values[0],
+                    "best_recall_validation": rest_best_values[1],
+                    "best_precision_validation": rest_best_values[2],
+                    "test_accuracy": test_accuracy,
+                    "test_f1": test_rest_values[0]
+                })
+            else:
+                print("Test set has no MMSE labels. Performing prediction only.")
+                test_accuracy, test_rest_values = evaluation(model, test_dataloader, lossfn, log_test, test=True)
+                wandb.log({
+                    "best_value_validation": best_value,
+                    "best_f1_validation": rest_best_values[0],
+                    "best_recall_validation": rest_best_values[1],
+                    "best_precision_validation": rest_best_values[2],
+                    "test_accuracy": test_accuracy,
+                    "test_f1": test_rest_values[0]
+                })
+
+            log_test.write(f'--------------------\n')
         wandb.finish()
 
 
 # スクリプトのメイン実行部分
 if __name__ == '__main__':
     # コマンドライン引数から設定ファイルのパスを取得
-    config_path = sys.argv[sys.argv.index('--config') + 1]
+    # スクリプトを実行する際には、`python your_script_name.py --config path/to/your/config.yaml` のように実行します。
+    try:
+        config_path_index = sys.argv.index('--config') + 1
+        config_path = sys.argv[config_path_index]
+    except (ValueError, IndexError):
+        print("Usage: python main_script.py --config /path/to/your/config.yaml")
+        sys.exit(1)
+
     # 設定ファイルを読み込み
     config = get_config(config_path)
     
     # ハイパーパラメータのグリッドサーチ用コード（現在はコメントアウト）
     """
-    for model_name in ['qwen']:
-            config.model_name = model_name
-            config.model.model_name = config.model_name
+    for model_name_iter in ['qwen']:
+        config.model_name = model_name_iter
+        config.model.model_name = config.model_name
 
-            for fusion in ['crossgated']:
-                config.model.fusion = fusion
+        for fusion_iter in ['crossgated']:
+            config.model.fusion = fusion_iter
 
-                for pooling in ['mean', 'cls']:
-                    config.model.pooling = pooling
+            for pooling_iter in ['mean', 'cls']:
+                config.model.pooling = pooling_iter
+                # 設定を保存
+                save_config(config)    
+                # メイン関数を実行
+                main(config)
     """
     
-    # 設定を保存
+    # 設定を保存 (グリッドサーチを行わない場合)
     save_config(config)    
     # メイン関数を実行
     main(config)

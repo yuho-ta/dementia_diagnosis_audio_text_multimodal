@@ -14,11 +14,14 @@ import os
 from sklearn.model_selection import KFold
 
 # データパス設定
-root_text_path = os.path.join('dataset', 'diagnosis', 'train', 'text')    # テキスト埋め込みファイルのパス
+root_text_path = os.path.join('dataset', 'diagnosis', 'train', 'text')     # テキスト埋め込みファイルのパス
 root_audio_path = os.path.join('dataset', 'diagnosis', 'train', 'audio')  # 音声ファイルのパス
 
 # ラベル情報（MMSEスコア）のCSVファイルパス
 csv_labels_path = os.path.join('dataset', 'diagnosis', 'train', 'adresso-train-mmse-scores.csv')
+# [変更点] テストデータ用のCSVファイルパスを追加
+csv_test_labels_path = os.path.join('dataset', 'diagnosis', 'test', 'adresso-test-mmse-scores.csv')
+
 
 # GPUが利用可能な場合はGPU、そうでなければCPUを使用
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -64,72 +67,204 @@ name_mapping_audio = {
 }
 
 
-def read_CSV(config):
+# [変更点] read_CSV関数に is_test パラメータを追加し、テスト時のラベル処理を修正
+def read_CSV(config, is_test=False):
     """
     CSVファイルからラベルと埋め込みデータを読み込む
     Args:
         config: 設定オブジェクト（モデル設定、ポーズ設定など）
+        is_test (bool): テストデータを読み込む場合はTrue。デフォルトはFalse。
     Returns:
         uids: ユーザーIDのリスト
         features: 特徴量（埋め込みベクトル）のリスト
         labels: ラベル（診断結果）のリスト
     """
-    # ラベル情報のCSVを読み込み
-    labels_pd = pd.read_csv(csv_labels_path)
-
     uids = []
     features = []
     labels = []
 
-    # ポーズ情報の有無によるファイル名の変更
-    pauses_data = '_pauses' if config.model.pauses else ''
-    # 音声モデルによるファイル名の変更
-    audio_data = '_' + name_mapping_audio[config.model.audio_model] if config.model.audio_model != '' else ''
-
-    # 各行（各音声ファイル）を処理
-    for index, row in labels_pd.iterrows():
-        uids.append(row['adressfname'])
-        # 診断結果を数値に変換（cn=0, ad=1）
-        labels.append(torch.tensor(0 if row['dx'] == "cn" else 1).to(device).float())
-
-        # テキスト埋め込みファイルのパスを構築
-        if config.model.textual_model != '':
-            text_embeddings_path = os.path.join(root_text_path, row['dx'], row['adressfname'] + 
-                                                    name_mapping_text[config.model.textual_model] + pauses_data + '.pt')
+    # [変更点] テストデータの場合、CSVファイルが存在しない可能性を考慮
+    current_csv_path = csv_test_labels_path if is_test else csv_labels_path
+    
+    if is_test and not os.path.exists(current_csv_path):
+        print(f"Warning: Test label CSV file not found at {current_csv_path}. Proceeding without labels for test set.")
         
-        # 音声埋め込みファイルのパスを構築
-        if config.model.audio_model != '':
-            textual_data = name_mapping_text[config.model.textual_model] if config.model.textual_model != '' else 'distil'
-            audio_embeddings_path = os.path.join(root_text_path, row['dx'], row['adressfname'] + textual_data 
-                                                 + pauses_data + audio_data + '.pt')
-        
-        # マルチモーダル（音声+テキスト）の場合
-        if config.model.multimodality:
-            # 音声とテキストの埋め込みをタプルとして保存
-            features.append((torch.load(audio_embeddings_path).to(device), torch.load(text_embeddings_path).to(device)))
-        else:
-            # 単一モーダルの場合
+        # テストデータのルートパス
+        root_data_path = os.path.join('dataset', 'diagnosis', 'test')
+        # テストセットのデータは通常、cn/adのサブディレクトリに分かれて格納されていると仮定
+        # これは、診断結果（dx）情報がファイルパスに含まれることを前提としている
+        for dx_type in ['cn', 'ad']: 
+            # テキスト埋め込みファイルのディレクトリパス
             if config.model.textual_model != '':
-                # テキストのみ
-                features.append(torch.load(text_embeddings_path).to(device))
-            elif config.model.audio_model != '':
-                # 音声のみ
-                features.append(torch.load(audio_embeddings_path).to(device))
+                dx_text_path = os.path.join(root_data_path, 'text', dx_type)
+                if os.path.exists(dx_text_path):
+                    for filename in os.listdir(dx_text_path):
+                        if filename.endswith('.pt'):
+                            # ファイル名から uid を抽出するロジック (例: AD_001_distil_pauses.pt -> AD_001)
+                            # `adressfname` がファイル名全体ではない場合、適宜調整が必要
+                            # ここではファイル名の先頭部分をuidとして仮定
+                            uid_raw = os.path.splitext(filename)[0]
+                            # model.pyのname_mapping_text, audio_data, pauses_dataを考慮してuidを生成する必要がある
+                            # シンプルにファイル名から最初の部分をUIDとして抽出する例
+                            uid_parts = uid_raw.split('_')
+                            if len(uid_parts) >= 2: # AD_001_... の形式を想定
+                                actual_uid = f"{uid_parts[0]}_{uid_parts[1]}"
+                            else: # ファイル名が短い場合や異なる形式の場合
+                                actual_uid = uid_raw # 完全なファイル名をUIDとして使用
 
+                            # 重複を避けるため、既に追加されていないかチェック
+                            if actual_uid not in uids:
+                                uids.append(actual_uid)
+                                # テストセットにはMMSEラベルがないので、ダミー値 -1 を設定
+                                labels.append(torch.tensor(-1).to(device).float()) 
+                else:
+                    print(f"Warning: Text data directory for {dx_type} not found at {dx_text_path}.")
+
+            # 音声埋め込みファイルのディレクトリパス
+            if config.model.audio_model != '':
+                dx_audio_path = os.path.join(root_data_path, 'text', dx_type)
+                if os.path.exists(dx_audio_path):
+                    for filename in os.listdir(dx_audio_path):
+                        if filename.endswith('.pt'):
+                            uid_raw = os.path.splitext(filename)[0]
+                            uid_parts = uid_raw.split('_')
+                            if len(uid_parts) >= 2:
+                                actual_uid = f"{uid_parts[0]}_{uid_parts[1]}"
+                            else:
+                                actual_uid = uid_raw
+                            
+                            if actual_uid not in uids:
+                                uids.append(actual_uid)
+                                labels.append(torch.tensor(-1).to(device).float())
+                else:
+                    print(f"Warning: Audio data directory for {dx_type} not found at {dx_audio_path}.")
+
+        # 実際にロードできる特徴量ファイルを収集
+        temp_features = []
+        temp_labels = [] # ここでラベルを管理する必要がある
+        temp_uids = []
+
+        # uids リストが構築された後に、各UIDに対応する特徴量ファイルをロード
+        for uid_idx, current_uid in enumerate(uids):
+            # 診断タイプをUIDから推測（例: "AD_001" -> "ad", "CN_001" -> "cn"）
+            dx_type_from_uid = 'ad' if current_uid.startswith('AD') else 'cn'
+            
+            pauses_data = '_pauses' if config.model.pauses else ''
+            audio_data = '_' + name_mapping_audio[config.model.audio_model] if config.model.audio_model != '' else ''
+            textual_data = name_mapping_text[config.model.textual_model] if config.model.textual_model != '' else 'distil' # distilはデフォルト的なもの
+
+            text_embeddings_path = os.path.join(root_data_path, 'text', dx_type_from_uid, 
+                                                current_uid + name_mapping_text[config.model.textual_model] + pauses_data + '.pt')
+            audio_embeddings_path = os.path.join(root_data_path, 'text', dx_type_from_uid, 
+                                                 current_uid + textual_data + pauses_data + audio_data + '.pt')
+
+            feature_loaded = False
+            if config.model.multimodality:
+                if os.path.exists(audio_embeddings_path) and os.path.exists(text_embeddings_path):
+                    temp_features.append((torch.load(audio_embeddings_path).to(device), torch.load(text_embeddings_path).to(device)))
+                    feature_loaded = True
+            else:
+                if config.model.textual_model != '':
+                    if os.path.exists(text_embeddings_path):
+                        temp_features.append(torch.load(text_embeddings_path).to(device))
+                        feature_loaded = True
+                elif config.model.audio_model != '':
+                    if os.path.exists(audio_embeddings_path):
+                        temp_features.append(torch.load(audio_embeddings_path).to(device))
+                        feature_loaded = True
+            
+            if feature_loaded:
+                temp_labels.append(labels[uid_idx]) # ダミーラベル
+                temp_uids.append(current_uid)
+            else:
+                print(f"Warning: Missing feature files for {current_uid} ({dx_type_from_uid}). Skipping.")
+        
+        features = temp_features
+        labels = temp_labels
+        uids = temp_uids
+
+    else:
+        # 訓練データ、またはテストデータにCSVが存在する場合
+        labels_pd = pd.read_csv(current_csv_path)
+
+        # ポーズ情報の有無によるファイル名の変更
+        pauses_data = '_pauses' if config.model.pauses else ''
+        # 音声モデルによるファイル名の変更
+        audio_data = '_' + name_mapping_audio[config.model.audio_model] if config.model.audio_model != '' else ''
+
+        # 各行（各音声ファイル）を処理
+        for index, row in labels_pd.iterrows():
+            uids.append(row['adressfname'])
+            # 診断結果を数値に変換（cn=0, ad=1）
+            labels.append(torch.tensor(0 if row['dx'] == "cn" else 1).to(device).float())
+
+            # [変更点] データパスを訓練用とテスト用で分ける
+            root_data_path = os.path.join('dataset', 'diagnosis', 'test' if is_test else 'train')
+
+            # テキスト埋め込みファイルのパスを構築
+            text_embeddings_path = None
+            if config.model.textual_model != '':
+                text_embeddings_path = os.path.join(root_data_path, 'text', row['dx'], row['adressfname'] + 
+                                                    name_mapping_text[config.model.textual_model] + pauses_data + '.pt')
+            
+            # 音声埋め込みファイルのパスを構築
+            audio_embeddings_path = None
+            if config.model.audio_model != '':
+                textual_data_for_audio_path = name_mapping_text[config.model.textual_model] if config.model.textual_model != '' else 'distil'
+                audio_embeddings_path = os.path.join(root_data_path, 'text', row['dx'], row['adressfname']  + pauses_data + audio_data + '.pt')
+            
+            # マルチモーダル（音声+テキスト）の場合
+            if config.model.multimodality:
+                # 音声とテキストの埋め込みをタプルとして保存
+                if text_embeddings_path and audio_embeddings_path and \
+                   os.path.exists(audio_embeddings_path) and os.path.exists(text_embeddings_path):
+                    features.append((torch.load(audio_embeddings_path).to(device), torch.load(text_embeddings_path).to(device)))
+                else:
+                    print(audio_embeddings_path)
+                    print(text_embeddings_path)
+                    print(f"Warning: Missing embedding files for {row['adressfname']} in multimodality. Skipping.")
+                    # 欠損データに対応するため、uidsとlabelsからもこのエントリを削除する必要がある
+                    uids.pop()
+                    labels.pop()
+                    continue
+            else:
+                # 単一モーダルの場合
+                if config.model.textual_model != '':
+                    # テキストのみ
+                    if text_embeddings_path and os.path.exists(text_embeddings_path):
+                        features.append(torch.load(text_embeddings_path).to(device))
+                    else:
+                        print(f"Warning: Missing text embedding file for {row['adressfname']}. Skipping.")
+                        uids.pop()
+                        labels.pop()
+                        continue
+                elif config.model.audio_model != '':
+                    # 音声のみ
+                    if audio_embeddings_path and os.path.exists(audio_embeddings_path):
+                        features.append(torch.load(audio_embeddings_path).to(device))
+                    else:
+                        print(audio_embeddings_path)
+                        print(f"Warning: Missing audio embedding file for {row['adressfname']}. Skipping.")
+                        uids.pop()
+                        labels.pop()
+                        continue
     return uids, features, labels
 
 
-def get_dataloaders(config, kfold_number = 0):
+# [変更点] get_dataloaders関数に return_test_dataloader パラメータを追加
+def get_dataloaders(config, kfold_number = 0, return_test_dataloader=False):
     """
     K-Fold交差検証用のデータローダーを生成
     Args:
         config: 設定オブジェクト
         kfold_number: K-Foldの番号（0-4）
+        return_test_dataloader (bool): テストデータローダーも返す場合はTrue。デフォルトはFalse。
     Returns:
         train_dataloader: 訓練用データローダー
         validation_dataloader: 検証用データローダー
+        test_dataloader (optional): テストデータローダー（return_test_dataloaderがTrueの場合のみ）
     """
-    # CSVからデータを読み込み
+    # CSVから訓練/検証データを読み込み
     uids, features, labels = read_CSV(config)
     
     # K-Fold分割ファイルのディレクトリ
@@ -168,7 +303,14 @@ def get_dataloaders(config, kfold_number = 0):
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=False)
 
-    return train_dataloader, validation_dataloader
+    if return_test_dataloader:
+        # テストデータを読み込み
+        test_uids, test_features, test_labels = read_CSV(config, is_test=True)
+        test_dataset = AdressoDataset(test_features, test_labels)
+        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+        return train_dataloader, validation_dataloader, test_dataloader
+    else:
+        return train_dataloader, validation_dataloader
 
 def set_splits():
     """

@@ -68,6 +68,7 @@ def preprocess_whisper():
                             'probablities': probs
                         }, ignore_index=True)
                         print(f'Added existing data for {uid}')
+                        continue  # 既存データを追加したら次のファイルに進む
                     except Exception as e:
                         print(f'Error loading existing data for {uid}: {e}')
                         continue

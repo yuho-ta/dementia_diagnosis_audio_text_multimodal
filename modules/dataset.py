@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 import torch
 import os
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
 
 # データパス設定
 root_text_path = os.path.join('dataset', 'diagnosis', 'train', 'text')     # テキスト埋め込みファイルのパス
@@ -29,15 +29,17 @@ max_length_wav2vec = 4000  # wav2vec2の最大長
 
 # ADReSSoデータセット用のPyTorchデータセットクラス
 class AdressoDataset(Dataset):
-    def __init__(self, features, labels):
+    def __init__(self, features, labels, uids):
         """
         データセットの初期化
         Args:
             features: 特徴量（埋め込みベクトル）のリスト
             labels: ラベル（診断結果）のリスト
+            uids: ユーザーIDのリスト
         """
         self.features = features
         self.labels = labels
+        self.uids = uids
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def __len__(self):
@@ -46,7 +48,7 @@ class AdressoDataset(Dataset):
 
     def __getitem__(self, idx):
         """指定されたインデックスのデータを返す"""
-        return self.features[idx], self.labels[idx]
+        return self.features[idx], self.labels[idx], idx, self.uids[idx]
 
 # テキストモデル名とファイル名のマッピング
 name_mapping_text = {
@@ -297,8 +299,8 @@ def get_dataloaders(config, kfold_number = 0, return_test_dataloader=False):
             train_labels.append(labels[i])
 
     # データセットとデータローダーを作成
-    train_dataset = AdressoDataset(train_features, train_labels)
-    validation_dataset = AdressoDataset(validation_features, validation_labels)
+    train_dataset = AdressoDataset(train_features, train_labels, train_uids)
+    validation_dataset = AdressoDataset(validation_features, validation_labels, validation_uids)
 
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=False)
@@ -306,7 +308,7 @@ def get_dataloaders(config, kfold_number = 0, return_test_dataloader=False):
     if return_test_dataloader:
         # テストデータを読み込み
         test_uids, test_features, test_labels = read_CSV(config, is_test=True)
-        test_dataset = AdressoDataset(test_features, test_labels)
+        test_dataset = AdressoDataset(test_features, test_labels, test_uids)
         test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
         return train_dataloader, validation_dataloader, test_dataloader
     else:
@@ -315,26 +317,29 @@ def get_dataloaders(config, kfold_number = 0, return_test_dataloader=False):
 def set_splits():
     """
     K-Fold交差検証用のデータ分割を作成・保存
-    - 5分割のK-Fold交差検証
+    - 5分割のStratified K-Fold交差検証（クラスバランスを保持）
     - 各foldの訓練用・検証用UIDをnumpyファイルとして保存
     """
     # ラベル情報のCSVを読み込み
     labels_pd = pd.read_csv(csv_labels_path)
     uids = []
+    labels = []
 
-    # 全UIDを取得
+    # 全UIDとラベルを取得
     for index, row in labels_pd.iterrows():
         uids.append(row['adressfname'])
+        # 診断結果を数値に変換（cn=0, ad=1）
+        labels.append(0 if row['dx'] == "cn" else 1)
 
     # 分割ファイル保存用ディレクトリを作成
     splits_dir = os.path.join('dataset', 'diagnosis', 'train', 'splits')
     os.makedirs(splits_dir, exist_ok=True)
 
-    # 5分割のK-Fold交差検証を実行
-    kfold = KFold(n_splits=5, shuffle=True, random_state=42)
+    # 5分割のStratified K-Fold交差検証を実行
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
     # 各foldの訓練用・検証用インデックスを取得し、ファイルに保存
-    for i, (train_index, test_index) in enumerate(kfold.split(uids)):
+    for i, (train_index, test_index) in enumerate(skf.split(uids, labels)):
         print("TRAIN:", train_index, "TEST:", test_index)
         np.save(os.path.join(splits_dir, 'train_uids' + str(i)), np.array(uids)[train_index])
         np.save(os.path.join(splits_dir, 'val_uids' + str(i)), np.array(uids)[test_index])

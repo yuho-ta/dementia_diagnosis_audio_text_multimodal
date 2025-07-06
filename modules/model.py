@@ -481,7 +481,6 @@ class CrossAttentionTransformerEncoder(nn.Module):
         audio_model_type = self.model_name.split('_')[1] if hasattr(self.config, 'audio_model') and self.config.audio_model != '' else ''
 
         # 音声特徴抽出（必要に応じて）
-        # srcまたはmemoryのどちらか（configで指定された方）にResNetAudioを適用
         if self.mel_extractor is not None:
             if 'mel' == audio_model_type or 'egemaps' == audio_model_type:
                 # ここでどちらに適用するかはモデルの設計によるため、今回はsrcに適用としています。
@@ -492,9 +491,7 @@ class CrossAttentionTransformerEncoder(nn.Module):
         
         # Transformer層を順次適用
         for i, layer in enumerate(self.layers):
-            # srcがmemoryにアテンションする形式
             src = layer(src, memory, src_mask=mask, src_key_padding_mask=key_padding_mask)
-            # 各層の間にLayerNormalizationとDropoutを適用（最後の層を除く）
             if i < len(self.norm_layers):
                 src = self.norm_layers[i](src)
                 src = self.dropout(src)
@@ -509,7 +506,9 @@ class CrossAttentionTransformerEncoder(nn.Module):
             src = self.attn_pooling(src, mask=key_padding_mask) # プーリングにはkey_padding_maskを使用
         
         # 最終分類器でクラスロジットを出力
-        return self.classifier(src)
+        logits = self.classifier(src)
+
+        return logits
 
 
 class BidirectionalCrossAttentionTransformerEncoder(nn.Module):

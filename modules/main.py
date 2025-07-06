@@ -132,7 +132,7 @@ def main(config):
                 # test_dataloaderのラベルがダミー値（-1）かどうかで判断
                 if test_dataloader is not None and len(test_dataloader.dataset.labels) > 0 and test_dataloader.dataset.labels[0] != -1:
                     # ラベルが存在し、ダミー値でない場合のみ精度計算を行う
-                    test_accuracy, test_rest_values = evaluation(model, test_dataloader, lossfn, log_test, test=True)
+                    test_accuracy, test_rest_values, _ , _= evaluation(model, test_dataloader, lossfn, log_test, test=True)
                     print(f'Test Accuracy: {test_accuracy:.4f}, Test F1: {test_rest_values[0]:.4f}')
                     log_test.write(f'Test Accuracy: {test_accuracy:.4f}\nTest F1: {test_rest_values[0]:.4f}\nTest Recall: {test_rest_values[1]:.4f}\nTest Precision: {test_rest_values[2]:.4f}\n')
                     wandb.log({
@@ -147,7 +147,7 @@ def main(config):
                     # ラベルがダミー値の場合、予測のみ行う
                     print("Test set has no MMSE labels. Performing prediction only.")
                     # evaluation関数が予測のみを返すように修正されているため、その結果をログに記録
-                    test_accuracy, test_rest_values = evaluation(model, test_dataloader, lossfn, log_test, test=True)
+                    test_accuracy, test_rest_values, _, _ = evaluation(model, test_dataloader, lossfn, log_test, test=True)
                     # evaluation関数がN/Aを書き込むので、ここでは追加で書き込まない
                     # wandbにもダミー値を記録
                     wandb.log({
@@ -187,7 +187,7 @@ def main(config):
         with open(test_log_file, "w") as log_test:
             log_test.write('--- Test Results ---\n')
             if test_dataloader is not None and len(test_dataloader.dataset.labels) > 0 and test_dataloader.dataset.labels[0] != -1:
-                test_accuracy, test_rest_values = evaluation(model, test_dataloader, lossfn, log_test, test=True)
+                test_accuracy, test_rest_values, _ = evaluation(model, test_dataloader, lossfn, log_test, test=True)
                 print(f'Test Accuracy: {test_accuracy:.4f}, Test F1: {test_rest_values[0]:.4f}')
                 log_test.write(f'Test Accuracy: {test_accuracy:.4f}\nTest F1: {test_rest_values[0]:.4f}\nTest Recall: {test_rest_values[1]:.4f}\nTest Precision: {test_rest_values[2]:.4f}\n')
                 wandb.log({
@@ -200,7 +200,7 @@ def main(config):
                 })
             else:
                 print("Test set has no MMSE labels. Performing prediction only.")
-                test_accuracy, test_rest_values = evaluation(model, test_dataloader, lossfn, log_test, test=True)
+                test_accuracy, test_rest_values, _ = evaluation(model, test_dataloader, lossfn, log_test, test=True)
                 wandb.log({
                     "best_value_validation": best_value,
                     "best_f1_validation": rest_best_values[0],

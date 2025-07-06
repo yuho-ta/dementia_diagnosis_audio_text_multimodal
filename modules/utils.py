@@ -18,6 +18,7 @@ from tqdm import tqdm
 import time
 import copy
 from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score
+import pandas as pd
 
 
 def set_seed(seed):
@@ -149,7 +150,8 @@ def train(model, train_dataloader, valid_dataloader, lossfn, optimizer, lr_sched
     
     best_value, patience = 0, 0
     best_epoch, best_weights, rest_best_values = 0, None, []
-    
+    best_mismatched_uids_with_probs = []  # 最良のaccuracyの時のmismatch IDと確率
+    best_mismatched_uids_with_confidence = [] # 最良のaccuracyの時のmismatch IDと信頼度
     num_training_steps = num_epochs * len(train_dataloader)
     progress_bar = tqdm(range(num_training_steps))
     
@@ -162,7 +164,7 @@ def train(model, train_dataloader, valid_dataloader, lossfn, optimizer, lr_sched
             log.write(f'Epoch {epoch + 1}:\n')
             
             # 訓練ループ
-            for features, labels in train_dataloader:    
+            for features, labels, _, _ in train_dataloader:    
                 # 順伝播
                 outputs = model(features).squeeze(-1)
                 loss = lossfn(outputs, labels)
@@ -202,12 +204,14 @@ def train(model, train_dataloader, valid_dataloader, lossfn, optimizer, lr_sched
             wandb.log({"train_loss": avg_loss, "train_ACC": accuracy, "train_F1": f1})
             
             # 検証
-            validation_value, rest_values = evaluation(model, valid_dataloader, lossfn, log)
+            validation_value, rest_values, mismatched_uids_with_probs, predictions_output = evaluation(model, valid_dataloader, lossfn, log, test=False)
             
             # 最良モデルの保存
             if validation_value > best_value:
                 best_epoch, best_weights = epoch + 1, copy.deepcopy(model.state_dict())
                 best_value, rest_best_values = validation_value, rest_values
+                best_mismatched_uids_with_probs = mismatched_uids_with_probs.copy()  # 最良のaccuracyの時のmismatch IDと確率を保存
+                best_predictions_output = predictions_output.copy() # 最良のaccuracyの時の予測結果を保存
                 patience = 0
             else:
                 patience += 1
@@ -228,6 +232,31 @@ def train(model, train_dataloader, valid_dataloader, lossfn, optimizer, lr_sched
     
     # 最良の重みをモデルに読み込み
     model.load_state_dict(best_weights)
+    
+    # 最良のaccuracyの時のmismatch IDと確率を保存
+    mmse_csv_path = './dataset/diagnosis/train/adresso-train-mmse-scores.csv'
+    if os.path.exists(mmse_csv_path):
+        mmse_df = pd.read_csv(mmse_csv_path)
+        mmse_dict = {str(row['adressfname']): (row['mmse'], row['dx']) for _, row in mmse_df.iterrows()}
+    else:
+        mmse_dict = {}
+        print("MMSE scores file not found. Skipping MMSE scores.")
+    best_mismatched_uids_path = f'logs/{model_name}/{num_cross_val}_best_mismatched_uids.txt' if cross_val else f'logs/{model_name}/best_mismatched_uids.txt'
+    with open(best_mismatched_uids_path, 'w') as f:
+        f.write(f"Best accuracy: {best_value:.4f}\n")
+        f.write(f"Best epoch: {best_epoch}\n")
+        f.write("UID, Prob, MMSE, DX\n")
+        for uid, prob in best_mismatched_uids_with_probs:
+            mmse, dx = mmse_dict.get(str(uid), ("N/A", "N/A"))
+            f.write(f"{uid}, {prob:.4f}, {mmse}, {dx}\n")
+    best_predictions_output_path = f'logs/{model_name}/{num_cross_val}_best_predictions_output.txt' if cross_val else f'logs/{model_name}/best_predictions_output.txt'
+    with open(best_predictions_output_path, 'w') as f:
+        f.write(f"Best accuracy: {best_value:.4f}\n")
+        f.write(f"Best epoch: {best_epoch}\n")
+        f.write("UID, Prob, MMSE, DX\n")
+        for uid, prob in best_predictions_output:
+            mmse, dx = mmse_dict.get(str(uid), ("N/A", "N/A"))
+            f.write(f"{uid}, {prob:.4f}, {mmse}, {dx}\n")
     return model, best_value, rest_best_values
 
 def evaluation(model, dataloader, lossfn, log, test=False):
@@ -239,6 +268,7 @@ def evaluation(model, dataloader, lossfn, log, test=False):
         lossfn: 損失関数
         log: ログファイル
         test: テストモードフラグ
+        save_logits_path: ログitsを保存するパス
     Returns:
         accuracy: 精度 (MMSEラベルがない場合は -1.0)
         [f1, recall, precision]: その他の指標 (MMSEラベルがない場合は [-1.0, -1.0, -1.0])
@@ -249,7 +279,8 @@ def evaluation(model, dataloader, lossfn, log, test=False):
     
     total_true, total_pred, total_loss = [], [], 0
     predictions_output = [] # 予測結果を保存するためのリスト
-    
+    mismatched_uids_with_probs = [] # 予測と正解が異なるUIDと確率のペアを保存
+
     # MMSEラベルがあるかどうかをチェック
     has_mmse_labels = False
     # データローダーが空でないか、かつラベルリストが空でないかを確認
@@ -262,7 +293,7 @@ def evaluation(model, dataloader, lossfn, log, test=False):
             print("Detected dummy labels (-1) in the dataset. Skipping accuracy calculation for this evaluation.")
 
     with torch.no_grad():  # 勾配計算を無効化
-        for features, labels in dataloader:
+        for features, labels, indices, uids in dataloader:
             outputs = model(features).squeeze(-1)
             
             # MMSEラベルがある場合のみ損失を計算
@@ -280,25 +311,27 @@ def evaluation(model, dataloader, lossfn, log, test=False):
                 continue
             
             predictions_np = predictions.detach().cpu().numpy().astype(int)
-            
-            # 予測結果を保存
-            predictions_output.extend(predictions_np)
+            probs_np = probs.detach().cpu().numpy()
+        
 
             if has_mmse_labels:
                 labels_np = labels.detach().cpu().numpy().astype(int)
                 total_true.extend(labels_np)
                 total_pred.extend(predictions_np)
+                for i, prob in enumerate(probs_np):
+                    if predictions_np[i] != labels_np[i]:
+                        mismatched_uids_with_probs.append((uids[i], prob))
+                    predictions_output.append((uids[i], prob))
     
     # 評価指標の計算
     if has_mmse_labels:
         accuracy, f1, recall, precision = get_metrics_classification(total_true, total_pred)
         avg_loss = total_loss / len(dataloader)
-        
-        log.write(f'Loss: {avg_loss:.4f}\nAccuracy: {accuracy:.4f}\nF1 Score: {f1:.4f}\nRecall: {recall:.4f}\nPrecision: {precision:.4f}\n')
+        if log is not None:
+            log.write(f'Loss: {avg_loss:.4f}\nAccuracy: {accuracy:.4f}\nF1 Score: {f1:.4f}\nRecall: {recall:.4f}\nPrecision: {precision:.4f}\n')
         # wandbに結果を記録（テストか検証かで異なるキーを使用）
         wandb.log({"test_loss": avg_loss, "test_UAR": accuracy, "test_F1": f1} if test else {"validation_loss": avg_loss, "validation_ACC": accuracy, "validation_F1": f1})
-        
-        return accuracy, [f1, recall, precision]
+        return accuracy, [f1, recall, precision], mismatched_uids_with_probs, predictions_output
     else:
         # MMSEラベルがない場合、精度は計算しない
         accuracy = -1.0
@@ -307,15 +340,17 @@ def evaluation(model, dataloader, lossfn, log, test=False):
         precision = -1.0
         avg_loss = -1.0 # 損失も計算しない、またはダミー値
         
-        log.write(f'Loss: N/A (No MMSE labels)\nAccuracy: N/A\nF1 Score: N/A\nRecall: N/A\nPrecision: N/A\n')
+        if log is not None:
+            log.write(f'Loss: N/A (No MMSE labels)\nAccuracy: N/A\nF1 Score: N/A\nRecall: N/A\nPrecision: N/A\n')
         # wandbにはダミー値を記録する
         wandb.log({"test_loss": avg_loss, "test_UAR": accuracy, "test_F1": f1} if test else {"validation_loss": avg_loss, "validation_ACC": accuracy, "validation_F1": f1})
         
         print("Predictions for test set (without MMSE labels):")
         # 予測結果をログファイルに追記
-        log.write(f"All predictions: {predictions_output}\n") # すべての予測を出力する
+        if log is not None:
+            log.write(f"All predictions: {predictions_output}\n") # すべての予測を出力する
         
-        return accuracy, [f1, recall, precision]
+        return accuracy, [f1, recall, precision], mismatched_uids_with_probs, predictions_output
 
 
 def get_model_statistics(model='all'):

@@ -38,13 +38,7 @@ def load_mismatch_data(log_dir):
                     prob = float(parts[1])
                     mmse = int(parts[2]) if parts[2] != 'N/A' else np.nan
                     dx = parts[3]
-                    
-                    # confidenceファイルの場合はprobをそのまま、mismatchファイルの場合は0.5からの距離を使用
-                    if '_best_confidence_output.txt' in file_path:
-                        confidence = prob  # 予測確率をそのまま使用
-                    else:
-                        confidence = abs(prob - 0.5) * 2  # 0.5からの距離に変換
-                    
+                    confidence = prob
                     file_data[file_name].append({
                         'UID': uid,
                         'Confidence': confidence,
@@ -77,9 +71,9 @@ def create_plots(file_data, output_dir='plots'):
         if '_best_mismatched_uids.txt' in file_name:
             base_name = file_name.replace('_best_mismatched_uids.txt', '')
             file_type = 'mismatch'
-        elif '_best_confidence_output.txt' in file_name:
-            base_name = file_name.replace('_best_confidence_output.txt', '')
-            file_type = 'confidence'
+        elif '_best_predictions_output.txt' in file_name:
+            base_name = file_name.replace('_best_predictions_output.txt', '')
+            file_type = 'predictions'
         else:
             base_name = file_name
             file_type = 'unknown'
@@ -110,22 +104,23 @@ def create_plots(file_data, output_dir='plots'):
                        alpha=0.7, s=100, label='AD (Dementia)', color='red')
         
         plt.xlabel('MMSE Score', fontsize=14)
-        if file_type == 'confidence':
+        if file_type == 'Prediction':
             plt.ylabel('Prediction Probability', fontsize=14)
         else:
-            plt.ylabel('Confidence', fontsize=14)
+            plt.ylabel('Prediction', fontsize=14)
         if file_type == 'mismatch':
             title_suffix = '(Mismatched Predictions)'
-        elif file_type == 'confidence':
-            title_suffix = '(All Predictions with Confidence)'
+        elif file_type == 'predictions':
+            title_suffix = '(All Predictions)'
         else:
             title_suffix = '(Predictions)'
             
-        plt.title(f'MMSE Score vs Model Confidence\n{base_name} {title_suffix}', fontsize=16)
+        plt.title(f'MMSE Score vs Model predictions\n{base_name} {title_suffix}', fontsize=16)
         plt.legend(fontsize=12)
         plt.grid(True, alpha=0.3)
         
         plt.axvline(x=26, color='gray', linestyle='--', alpha=0.7, label='MMSE=24 (Diagnosis boundary)')
+        plt.axhline(y=0.5, color='gray', linestyle='--', alpha=0.7, label='y=0.5')
         plt.legend()
         
         plt.tight_layout()

@@ -58,12 +58,12 @@ name_mapping_text = {
     'mistral': 'mistral',
     'qwen': 'qwen',
     'stella': 'stella',
-    'distilbert': ''
+    'distilbert': 'distilbert'
 }
 
 # 音声モデル名とファイル名のマッピング
 name_mapping_audio = {
-    'wav2vec2': 'audio',
+    'wav2vec2': 'wav2vec2',
     'egemaps': 'egemaps',
     'mel': 'mel'
 }
@@ -153,12 +153,11 @@ def read_CSV(config, is_test=False):
             
             pauses_data = '_pauses' if config.model.pauses else ''
             audio_data = '_' + name_mapping_audio[config.model.audio_model] if config.model.audio_model != '' else ''
-            textual_data = name_mapping_text[config.model.textual_model] if config.model.textual_model != '' else 'distil' # distilはデフォルト的なもの
 
             text_embeddings_path = os.path.join(root_data_path, 'text', dx_type_from_uid, 
                                                 current_uid + name_mapping_text[config.model.textual_model] + pauses_data + '.pt')
             audio_embeddings_path = os.path.join(root_data_path, 'text', dx_type_from_uid, 
-                                                 current_uid + textual_data + pauses_data + audio_data + '.pt')
+                                                 current_uid + name_mapping_text[config.model.textual_model] + pauses_data + audio_data + '.pt')
 
             feature_loaded = False
             if config.model.multimodality:
@@ -212,8 +211,7 @@ def read_CSV(config, is_test=False):
             # 音声埋め込みファイルのパスを構築
             audio_embeddings_path = None
             if config.model.audio_model != '':
-                textual_data_for_audio_path = name_mapping_text[config.model.textual_model] if config.model.textual_model != '' else 'distil'
-                audio_embeddings_path = os.path.join(root_data_path, 'text', row['dx'], row['adressfname']  + pauses_data + audio_data + '.pt')
+                audio_embeddings_path = os.path.join(root_data_path, 'text', row['dx'], row['adressfname']  + name_mapping_text[config.model.textual_model] + pauses_data + audio_data + '.pt')
             
             # マルチモーダル（音声+テキスト）の場合
             if config.model.multimodality:

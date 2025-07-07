@@ -56,15 +56,33 @@ def preprocess_whisper():
                     try:
                         word_level_df = pd.read_csv(word_level_path)
                         # 単語リストから書き起こし文を再構成
-                        transcription = ' '.join(word_level_df['word'].tolist())
-                        transcription_pause = transcription  # 既存データは簡易的に同じ
-                        probs = list(zip(word_level_df['word'].tolist(), word_level_df['probability'].tolist()))
-                        
+                        transcription = ''
+                        transcription_pauses = ''
+                        prev_start = 0.0
+                        words = word_level_df['word'].tolist()
+                        starts = word_level_df['start'].tolist() if 'start' in word_level_df.columns else [0.0]*len(words)
+                        transcription_words = []
+                        transcription_pauses_words = []
+                        for i, word in enumerate(words):
+                            transcription_words.append(word)
+                            transcription_pauses_words.append(word)
+                            if i > 0:
+                                pause = starts[i] - prev_start
+                                if pause > 2:
+                                    transcription_pauses_words[-1] += ' ...'
+                                elif pause > 1:
+                                    transcription_pauses_words[-1] += ' .'
+                                elif pause > 0.5:
+                                    transcription_pauses_words[-1] += ' ,'
+                            prev_start = starts[i]
+                        transcription = ' '.join(transcription_words)
+                        transcription_pauses = ' '.join(transcription_pauses_words)
+                        probs = list(zip(words, word_level_df['probability'].tolist()))
                         df = df._append({
                             'uid': uid, 
                             'diagno': diagno, 
                             'transcription': remove_non_english(transcription), 
-                            'transcription_pause': remove_non_english(transcription_pause), 
+                            'transcription_pause': remove_non_english(transcription_pauses), 
                             'probablities': probs
                         }, ignore_index=True)
                         print(f'Added existing data for {uid}')

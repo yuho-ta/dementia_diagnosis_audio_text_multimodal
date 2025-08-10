@@ -1,0 +1,146 @@
+# ノイズ追加付きwav2vec特徴量抽出設定ファイル
+
+# 基本設定
+paths:
+  root_path: "dataset/diagnosis/train/audio"
+  output_path: "dataset/diagnosis/train/noise_augmented_features"
+  textual_data: "dataset/diagnosis/train/text_transcriptions.csv"
+
+# モデル設定
+model:
+  wav2vec_model: "facebook/wav2vec2-base-960h"
+  max_length: 200
+
+# データ拡張設定
+augmentation_configs:
+  - name: "original"
+    config: null  # 元の音声（ノイズなし）
+    
+  - name: "gaussian_noise_light"
+    config:
+      add_noise: true
+      noise_type: "gaussian"
+      snr_db: 25.0
+      noise_level: 0.05
+      
+  - name: "gaussian_noise_medium"
+    config:
+      add_noise: true
+      noise_type: "gaussian"
+      snr_db: 20.0
+      noise_level: 0.1
+      
+  - name: "gaussian_noise_heavy"
+    config:
+      add_noise: true
+      noise_type: "gaussian"
+      snr_db: 15.0
+      noise_level: 0.15
+      
+  - name: "uniform_noise"
+    config:
+      add_noise: true
+      noise_type: "uniform"
+      snr_db: 15.0
+      noise_level: 0.15
+      
+  - name: "pink_noise"
+    config:
+      add_noise: true
+      noise_type: "pink"
+      snr_db: 18.0
+      noise_level: 0.12
+      
+  - name: "reverberation_light"
+    config:
+      add_reverberation: true
+      room_size: 0.05
+      damping: 0.8
+      
+  - name: "reverberation_medium"
+    config:
+      add_reverberation: true
+      room_size: 0.1
+      damping: 0.5
+      
+  - name: "reverberation_heavy"
+    config:
+      add_reverberation: true
+      room_size: 0.15
+      damping: 0.3
+      
+  - name: "combined_light"
+    config:
+      add_noise: true
+      noise_type: "gaussian"
+      snr_db: 22.0
+      noise_level: 0.08
+      add_reverberation: true
+      room_size: 0.03
+      damping: 0.9
+      
+  - name: "combined_medium"
+    config:
+      add_noise: true
+      noise_type: "gaussian"
+      snr_db: 20.0
+      noise_level: 0.1
+      add_reverberation: true
+      room_size: 0.05
+      damping: 0.7
+      
+  - name: "combined_heavy"
+    config:
+      add_noise: true
+      noise_type: "gaussian"
+      snr_db: 18.0
+      noise_level: 0.12
+      add_reverberation: true
+      room_size: 0.08
+      damping: 0.5
+
+# 処理設定
+processing:
+  skip_existing: true  # 既存ファイルをスキップするか
+  batch_size: 1        # バッチサイズ（メモリ使用量調整用）
+  device: "auto"       # "auto", "cuda", "cpu"
+
+# 分類設定（audio_only.yamlを参考）
+classification:
+  train:
+    batch_size: 64
+    num_epochs: 50
+    learning_rate: 0.00002
+    weight_decay: 0.05
+    early_stopping: true
+    early_stopping_patience: 20
+    cross_validation: true
+    cross_validation_folds: 5
+
+  model:
+    pooling: 'mean'  # 'mean', 'cls' (Transformer Encoder用)
+    n_layers: 1      # Transformer Encoder層数
+    dropout: 0.5
+    hidden_size: 768 # Transformer Encoderの隠れ層サイズ
+    intermediate_size: 3072  # Transformer Encoderのフィードフォワード層サイズ
+    n_heads: 12      # マルチヘッドアテンションのヘッド数
+    num_classes: 2   # ad/cnの2クラス分類
+    hidden_mlp_size: 256  # 分類器の隠れ層サイズ
+    textual_model: '' 
+    audio_model: 'wav2vec2' 
+    pauses: true
+    fusion: '' 
+
+  model_name: 'noise_augmented_wav2vec2'
+
+# wandb設定
+wandb:
+  project: "noise-augmented-wav2vec-classification"
+  entity: null  # ユーザー名を設定
+  log_model: true
+  log_code: true
+  # ログ頻度設定
+  logging:
+    train_log_every: 1      # 訓練時のログ頻度（エポックごと）
+    val_log_every: 1        # 評価時のログ頻度（エポックごと）
+    console_log_every: 10   # コンソール出力頻度（エポックごと）

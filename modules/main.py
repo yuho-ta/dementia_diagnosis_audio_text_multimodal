@@ -8,6 +8,7 @@
 # =============================
 
 from dataset import get_dataloaders
+from silence_features_dataset import get_silence_dataloaders
 from utils import set_seed, get_config, train, save_config, evaluation # [変更点] evaluationをインポート
 from model import CrossAttentionTransformerEncoder, MyTransformerEncoder, BidirectionalCrossAttentionTransformerEncoder, ElementWiseFusionEncoder
 import torch
@@ -61,7 +62,7 @@ def set_up(config, train_dataloader, device, fold=0):
     # 学習率スケジューラーの設定
     num_training_steps = config.train.num_epochs * len(train_dataloader)
     lr_scheduler = get_scheduler(
-        name="cosine", optimizer=optimizer, num_warmup_steps=20, num_training_steps=num_training_steps
+        name="cosine", optimizer=optimizer, num_warmup_steps=30, num_training_steps=num_training_steps
     )
 
     # Weights & Biases（wandb）の初期化
@@ -106,7 +107,8 @@ def main(config):
             # 各foldで訓練・評価を実行
             for fold in range(config.train.cross_validation_folds):
                 # [変更点] テストデータローダーも取得するように変更
-                train_dataloader, validation_dataloader, test_dataloader = get_dataloaders(config, kfold_number=fold, return_test_dataloader=True)
+                train_dataloader, validation_dataloader = get_silence_dataloaders(config, kfold_number=fold)
+                #train_dataloader, validation_dataloader, test_dataloader = get_dataloaders(config, kfold_number=fold, return_test_dataloader=True)
                 
                 # モデル、オプティマイザー等の設定
                 model, optimizer, lossfn, lr_scheduler = set_up(config, train_dataloader, device, fold)
@@ -129,10 +131,11 @@ def main(config):
                 print(f"Evaluating on test set for Fold {fold}...")
                 log_test.write(f'--- Test Results for Fold {fold} ---\n')
                 
+                test_dataloader = None
                 # test_dataloaderのラベルがダミー値（-1）かどうかで判断
                 if test_dataloader is not None and len(test_dataloader.dataset.labels) > 0 and test_dataloader.dataset.labels[0] != -1:
                     # ラベルが存在し、ダミー値でない場合のみ精度計算を行う
-                    test_accuracy, test_rest_values, _ , _= evaluation(model, test_dataloader, lossfn, log_test, test=True)
+                    test_accuracy, test_rest_values, _ , _= evaluation(model, test_dataloader, lossfn, log_test, 0, test=True)
                     print(f'Test Accuracy: {test_accuracy:.4f}, Test F1: {test_rest_values[0]:.4f}')
                     log_test.write(f'Test Accuracy: {test_accuracy:.4f}\nTest F1: {test_rest_values[0]:.4f}\nTest Recall: {test_rest_values[1]:.4f}\nTest Precision: {test_rest_values[2]:.4f}\n')
                     wandb.log({
@@ -146,18 +149,18 @@ def main(config):
                 else:
                     # ラベルがダミー値の場合、予測のみ行う
                     print("Test set has no MMSE labels. Performing prediction only.")
-                    # evaluation関数が予測のみを返すように修正されているため、その結果をログに記録
-                    test_accuracy, test_rest_values, _, _ = evaluation(model, test_dataloader, lossfn, log_test, test=True)
-                    # evaluation関数がN/Aを書き込むので、ここでは追加で書き込まない
-                    # wandbにもダミー値を記録
-                    wandb.log({
-                        "best_value_validation": best_value,
-                        "best_f1_validation": rest_best_values[0],
-                        "best_recall_validation": rest_best_values[1],
-                        "best_precision_validation": rest_best_values[2],
-                        "test_accuracy": test_accuracy, # -1.0 が記録される
-                        "test_f1": test_rest_values[0] # -1.0 が記録される
-                    })
+                    # # evaluation関数が予測のみを返すように修正されているため、その結果をログに記録
+                    # test_accuracy, test_rest_values, _, _ = evaluation(model, test_dataloader, lossfn, log_test, 0, test=True)
+                    # # evaluation関数がN/Aを書き込むので、ここでは追加で書き込まない
+                    # # wandbにもダミー値を記録
+                    # wandb.log({
+                    #     "best_value_validation": best_value,
+                    #     "best_f1_validation": rest_best_values[0],
+                    #     "best_recall_validation": rest_best_values[1],
+                    #     "best_precision_validation": rest_best_values[2],
+                    #     "test_accuracy": test_accuracy, # -1.0 が記録される
+                    #     "test_f1": test_rest_values[0] # -1.0 が記録される
+                    # })
 
 
                 log_test.write(f'-----------------------------------\n')
@@ -165,7 +168,8 @@ def main(config):
     else:
         # 通常の訓練（交差検証なし）
         # [変更点] テストデータローダーも取得するように変更
-        train_dataloader, validation_dataloader, test_dataloader = get_dataloaders(config, return_test_dataloader=True)
+        train_dataloader, validation_dataloader = get_silence_dataloaders(config)
+        #train_dataloader, validation_dataloader, test_dataloader = get_dataloaders(config, return_test_dataloader=True)
         
         # モデル、オプティマイザー等の設定
         model, optimizer, lossfn, lr_scheduler = set_up(config, train_dataloader, device)
@@ -181,13 +185,14 @@ def main(config):
         torch.save(model.state_dict(), model_save_path)
         print('Model saved')
 
-        # [変更点] テストセットでの評価 (MMSE CSVがない場合は精度計算をスキップ)
+        #[変更点] テストセットでの評価 (MMSE CSVがない場合は精度計算をスキップ)
         print(f"Evaluating on test set...")
         test_log_file = os.path.join(log_path, 'test_results.txt')
         with open(test_log_file, "w") as log_test:
             log_test.write('--- Test Results ---\n')
+            test_dataloader = None
             if test_dataloader is not None and len(test_dataloader.dataset.labels) > 0 and test_dataloader.dataset.labels[0] != -1:
-                test_accuracy, test_rest_values, _ = evaluation(model, test_dataloader, lossfn, log_test, test=True)
+                test_accuracy, test_rest_values, _ = evaluation(model, test_dataloader, lossfn, log_test, 0, test=True)
                 print(f'Test Accuracy: {test_accuracy:.4f}, Test F1: {test_rest_values[0]:.4f}')
                 log_test.write(f'Test Accuracy: {test_accuracy:.4f}\nTest F1: {test_rest_values[0]:.4f}\nTest Recall: {test_rest_values[1]:.4f}\nTest Precision: {test_rest_values[2]:.4f}\n')
                 wandb.log({
@@ -200,15 +205,15 @@ def main(config):
                 })
             else:
                 print("Test set has no MMSE labels. Performing prediction only.")
-                test_accuracy, test_rest_values, _ = evaluation(model, test_dataloader, lossfn, log_test, test=True)
-                wandb.log({
-                    "best_value_validation": best_value,
-                    "best_f1_validation": rest_best_values[0],
-                    "best_recall_validation": rest_best_values[1],
-                    "best_precision_validation": rest_best_values[2],
-                    "test_accuracy": test_accuracy,
-                    "test_f1": test_rest_values[0]
-                })
+                # test_accuracy, test_rest_values, _ = evaluation(model, test_dataloader, lossfn, log_test, test=True)
+                # wandb.log({
+                #     "best_value_validation": best_value,
+                #     "best_f1_validation": rest_best_values[0],
+                #     "best_recall_validation": rest_best_values[1],
+                #     "best_precision_validation": rest_best_values[2],
+                #     "test_accuracy": test_accuracy,
+                #     "test_f1": test_rest_values[0]
+                # })
 
             log_test.write(f'--------------------\n')
         wandb.finish()

@@ -171,11 +171,6 @@ def preprocess_text():
         text_embedding_path = os.path.join(root_text_path, row['diagno'], row['uid'] + textual_model_data + pauses_data + '.pt')
         audio_embedding_path = os.path.join(root_text_path, row['diagno'], row['uid'] + textual_model_data + pauses_data + audio_model_data + '.pt')
         
-        # 既に処理済みのファイルはスキップ
-        if os.path.exists(text_embedding_path) and (audio_model == '' or os.path.exists(audio_embedding_path)):
-            logger.info(f"Skipping {row['uid']} - embedding files already exist")
-            completed_audios += 1
-            continue
 
         # 書き起こしテキストを取得
         transcription = row[row_data]
@@ -199,7 +194,7 @@ def preprocess_text():
 
         # 音声モデルが指定されている場合、音声埋め込みも処理
         if audio_model != '':
-            audio_path = os.path.join(root_path, row['diagno'], row['uid'] + '.wav')
+            audio_path = os.path.join(root_path, row['diagno'], row['uid'] + '.mp3')
 
             # wav2vec2モデルの場合
             if audio_model == 'wav2vec2':

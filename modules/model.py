@@ -476,6 +476,7 @@ class CrossAttentionTransformerEncoder(nn.Module):
         Returns:
             torch.Tensor: 分類器の出力（ロジット）。
         """
+        #src,memoryをチェンジはここ
         src, memory = features
 
         audio_model_type = self.model_name.split('_')[1] if hasattr(self.config, 'audio_model') and self.config.audio_model != '' else ''

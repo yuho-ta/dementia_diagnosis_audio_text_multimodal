@@ -25,14 +25,6 @@ def main():
     print("Generating cross-validation splits...")
     print("交差検証分割を生成中...")
     
-    # CSVファイルの存在確認
-    # ラベル情報（MMSEスコア）のCSVファイルパス
-    csv_path = os.path.join('dataset', 'diagnosis', 'train', 'adresso-train-mmse-scores.csv')
-    if not os.path.exists(csv_path):
-        print(f"Error: {csv_path} not found!")
-        print(f"エラー: {csv_path} が見つかりません！")
-        return
-    
     # K-Fold分割を生成
     # 5分割の交差検証用データ分割を作成し、numpyファイルとして保存
     set_splits()

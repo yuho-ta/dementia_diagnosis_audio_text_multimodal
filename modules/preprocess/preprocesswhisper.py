@@ -38,16 +38,16 @@ def preprocess_whisper():
         diagno_path = os.path.join(root_path, diagno)
 
         for file in os.listdir(diagno_path):
-            if file.endswith(".wav"):
+            if file.endswith(".wav") or file.endswith(".mp3"):
                 # 単語レベルのCSVパスを作成
-                word_level_path = os.path.join(diagno_path, file).replace('.wav', '.csv').replace('audio', 'text')
+                word_level_path = os.path.join(diagno_path, file).replace('.mp3', '.csv').replace('audio', 'text')
                 
                 # 既に処理済みのファイルはスキップ
                 if os.path.exists(word_level_path):
                     print(f'Skipping already processed: {file}')
                     
                     # 既存データをデータフレームに追加（未登録の場合）
-                    uid = file.replace('.wav', '')
+                    uid = file.replace('.mp3', '')
                     if not df[(df['uid'] == uid) & (df['diagno'] == diagno)].empty:
                         print(f'Data for {uid} already in dataframe')
                         continue
@@ -69,7 +69,7 @@ def preprocess_whisper():
                             if i > 0:
                                 pause = starts[i] - prev_start
                                 if pause > 2:
-                                    transcription_pauses_words[-1] += ' ...'
+                                    transcription_pauses_words[-1] += ' ' + '.' * int(pause)
                                 elif pause > 1:
                                     transcription_pauses_words[-1] += ' .'
                                 elif pause > 0.5:
@@ -96,17 +96,31 @@ def preprocess_whisper():
                 audio_path = os.path.join(diagno_path, file)
                 print(audio_path)
                 # セグメンテーション（話者分離）CSVのパス
-                segmentation_path = audio_path.replace('.wav', '.csv').replace('audio', 'segmentation')
+                segmentation_path = audio_path.replace('.mp3', '.cha').replace('audio', 'segmentation')
                 
                 excluding_times = []
 
                 # セグメンテーション情報があれば、話者が"INV"の区間を除外リストに追加
                 if os.path.exists(segmentation_path):
-                    df_segmentation = pd.read_csv(segmentation_path)
-                    df_segmentation = df_segmentation[df_segmentation['speaker'] == 'INV']
-                    for segment in df_segmentation.iterrows():
-                        excluding_times += [(segment[1]['begin']/1000, segment[1]['end']/1000)]
-
+                    if segmentation_path.endswith('.cha'):
+                        # .chaファイルをテキストとしてパース
+                        with open(segmentation_path, encoding='utf-8') as f:
+                            for line in f:
+                                if line.startswith('*INV:'):
+                                    # 区間部分を抽出（例:  15 56490_57272 15 ）
+                                    import re
+                                    match = re.search(r'\u0015(\d+)_(\d+)\u0015', line)
+                                    if match:
+                                        begin = int(match.group(1)) / 1000.0
+                                        end = int(match.group(2)) / 1000.0
+                                        excluding_times.append((begin, end))
+                    else:
+                        df_segmentation = pd.read_csv(segmentation_path)
+                        df_segmentation = df_segmentation[df_segmentation['speaker'] == 'INV']
+                        for segment in df_segmentation.iterrows():
+                            excluding_times += [(segment[1]['begin']/1000, segment[1]['end']/1000)]
+                else:
+                    print("Segmentation fileがありません")
                 idx_exclude = 0
                 # Whisperで音声認識し、単語ごとのタイムスタンプと確率を取得
                 result = model.transcribe(audio_path, word_timestamps=True)
@@ -143,7 +157,7 @@ def preprocess_whisper():
                                 pause = word['start'] - prev_start
 
                                 if pause > 2:
-                                    transcription_pauses += ' ...'
+                                    transcription_pauses += f' {pause:.2f}'
                                 elif pause > 1:
                                     transcription_pauses += ' .'
                                 elif pause > 0.5:
@@ -166,7 +180,7 @@ def preprocess_whisper():
                 pandas_word_level.to_csv(word_level_path, index=False)
 
                 # 全体のデータフレームにも追加
-                df = df._append({'uid': file.replace('.wav', ''), 'diagno': diagno, 'transcription': remove_non_english(transcription), 'transcription_pause': remove_non_english(transcription_pauses), 'probablities': probs}, ignore_index=True)
+                df = df._append({'uid': file.replace('.mp3', ''), 'diagno': diagno, 'transcription': remove_non_english(transcription), 'transcription_pause': remove_non_english(transcription_pauses), 'probablities': probs}, ignore_index=True)
     # 全ファイル分の書き起こし結果をまとめてCSVに保存
     os.makedirs(os.path.dirname(textual_data), exist_ok=True)
     df.to_csv(textual_data, index=False)

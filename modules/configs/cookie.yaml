@@ -9,7 +9,7 @@ train:
   cross_validation_folds: 5
 
 model:
-  pooling: 'mean' # 'mean', 'cls', 'attn', 'gatedattn'
+  pooling: 'mean' # 'mean', 'cls'
   n_layers: 1
   dropout: 0.5
   hidden_size: 768
@@ -17,9 +17,9 @@ model:
   n_heads: 12
   num_classes: 1
   hidden_mlp_size: 256
-  textual_model: '' 
-  audio_model: 'wav2vec2' 
+  textual_model: 'distilbert'
+  audio_model: 'wav2vec2'
   pauses: True
-  fusion: '' 
+  fusion: 'gatedcross'
 
-model_name: 'audio_only_wav2vec2'
+model_name: 'cookie'

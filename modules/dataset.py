@@ -18,7 +18,7 @@ root_text_path = os.path.join('dataset', 'diagnosis', 'train', 'text')     # テ
 root_audio_path = os.path.join('dataset', 'diagnosis', 'train', 'audio')  # 音声ファイルのパス
 
 # ラベル情報（MMSEスコア）のCSVファイルパス
-csv_labels_path = os.path.join('dataset', 'diagnosis', 'train', 'adresso-train-mmse-scores.csv')
+csv_labels_path = os.path.join('dataset', 'diagnosis', 'train', 'text_transcriptions.csv')
 # [変更点] テストデータ用のCSVファイルパスを追加
 csv_test_labels_path = os.path.join('dataset', 'diagnosis', 'test', 'adresso-test-mmse-scores.csv')
 
@@ -152,12 +152,13 @@ def read_CSV(config, is_test=False):
             dx_type_from_uid = 'ad' if current_uid.startswith('AD') else 'cn'
             
             pauses_data = '_pauses' if config.model.pauses else ''
-            audio_data = '_' + name_mapping_audio[config.model.audio_model] if config.model.audio_model != '' else ''
+            audio_data = '_' + name_mapping_audio[config.model.audio_model] if config.model.audio_model != '' else 'wav2vec2'
+            text_data = name_mapping_text[config.model.textual_model] if config.model.textual_model != '' else ''
 
             text_embeddings_path = os.path.join(root_data_path, 'text', dx_type_from_uid, 
-                                                current_uid + name_mapping_text[config.model.textual_model] + pauses_data + '.pt')
+                                                current_uid + text_data + pauses_data + '.pt')
             audio_embeddings_path = os.path.join(root_data_path, 'text', dx_type_from_uid, 
-                                                 current_uid + name_mapping_text[config.model.textual_model] + pauses_data + audio_data + '.pt')
+                                                 current_uid + text_data + pauses_data + audio_data + '.pt')
 
             feature_loaded = False
             if config.model.multimodality:
@@ -191,13 +192,14 @@ def read_CSV(config, is_test=False):
         # ポーズ情報の有無によるファイル名の変更
         pauses_data = '_pauses' if config.model.pauses else ''
         # 音声モデルによるファイル名の変更
-        audio_data = '_' + name_mapping_audio[config.model.audio_model] if config.model.audio_model != '' else ''
+        audio_data = '_' + name_mapping_audio[config.model.audio_model] if config.model.audio_model != '' else 'wav2vec2'
+        text_data = name_mapping_text[config.model.textual_model] if config.model.textual_model != '' else ''
 
         # 各行（各音声ファイル）を処理
         for index, row in labels_pd.iterrows():
-            uids.append(row['adressfname'])
+            uids.append(row['uid'])
             # 診断結果を数値に変換（cn=0, ad=1）
-            labels.append(torch.tensor(0 if row['dx'] == "cn" else 1).to(device).float())
+            labels.append(torch.tensor(0 if row['diagno'] == "cn" else 1).to(device).float())
 
             # [変更点] データパスを訓練用とテスト用で分ける
             root_data_path = os.path.join('dataset', 'diagnosis', 'test' if is_test else 'train')
@@ -205,13 +207,13 @@ def read_CSV(config, is_test=False):
             # テキスト埋め込みファイルのパスを構築
             text_embeddings_path = None
             if config.model.textual_model != '':
-                text_embeddings_path = os.path.join(root_data_path, 'text', row['dx'], row['adressfname'] + 
-                                                    name_mapping_text[config.model.textual_model] + pauses_data + '.pt')
+                text_embeddings_path = os.path.join(root_data_path, 'text', row['diagno'], row['uid'] + 
+                                                    text_data + pauses_data + '.pt')
             
             # 音声埋め込みファイルのパスを構築
             audio_embeddings_path = None
             if config.model.audio_model != '':
-                audio_embeddings_path = os.path.join(root_data_path, 'text', row['dx'], row['adressfname']  + name_mapping_text[config.model.textual_model] + pauses_data + audio_data + '.pt')
+                audio_embeddings_path = os.path.join(root_data_path, 'text', row['diagno'], row['uid']  + text_data + pauses_data + audio_data + '.pt')
             
             # マルチモーダル（音声+テキスト）の場合
             if config.model.multimodality:
@@ -222,7 +224,7 @@ def read_CSV(config, is_test=False):
                 else:
                     print(audio_embeddings_path)
                     print(text_embeddings_path)
-                    print(f"Warning: Missing embedding files for {row['adressfname']} in multimodality. Skipping.")
+                    print(f"Warning: Missing embedding files for {row['uid']} in multimodality. Skipping.")
                     # 欠損データに対応するため、uidsとlabelsからもこのエントリを削除する必要がある
                     uids.pop()
                     labels.pop()
@@ -234,7 +236,8 @@ def read_CSV(config, is_test=False):
                     if text_embeddings_path and os.path.exists(text_embeddings_path):
                         features.append(torch.load(text_embeddings_path).to(device))
                     else:
-                        print(f"Warning: Missing text embedding file for {row['adressfname']}. Skipping.")
+                        print(text_embeddings_path)
+                        print(f"Warning: Missing text embedding file for {row['uid']}. Skipping.")
                         uids.pop()
                         labels.pop()
                         continue
@@ -244,7 +247,7 @@ def read_CSV(config, is_test=False):
                         features.append(torch.load(audio_embeddings_path).to(device))
                     else:
                         print(audio_embeddings_path)
-                        print(f"Warning: Missing audio embedding file for {row['adressfname']}. Skipping.")
+                        print(f"Warning: Missing audio embedding file for {row['uid']}. Skipping.")
                         uids.pop()
                         labels.pop()
                         continue
@@ -325,9 +328,9 @@ def set_splits():
 
     # 全UIDとラベルを取得
     for index, row in labels_pd.iterrows():
-        uids.append(row['adressfname'])
+        uids.append(row['uid'])
         # 診断結果を数値に変換（cn=0, ad=1）
-        labels.append(0 if row['dx'] == "cn" else 1)
+        labels.append(0 if row['diagno'] == "cn" else 1)
 
     # 分割ファイル保存用ディレクトリを作成
     splits_dir = os.path.join('dataset', 'diagnosis', 'train', 'splits')
@@ -353,7 +356,7 @@ def get_splits_stats():
 
     # 全UIDを取得
     for index, row in labels_pd.iterrows():
-        uids.append(row['adressfname'])
+        uids.append(row['uid'])
 
     splits_dir = os.path.join('dataset', 'diagnosis', 'train', 'splits')
 
@@ -371,14 +374,14 @@ def get_splits_stats():
 
         # 訓練用データのクラス分布をカウント
         for uid in training_split:
-            if labels_pd[labels_pd['adressfname'] == uid]['dx'].values[0] == 'cn':
+            if labels_pd[labels_pd['uid'] == uid]['diagno'].values[0] == 'cn':
                 n_cn_train += 1
             else:
                 n_ad_train += 1
 
         # 検証用データのクラス分布をカウント
         for uid in validation_split:
-            if labels_pd[labels_pd['adressfname'] == uid]['dx'].values[0] == 'cn':
+            if labels_pd[labels_pd['uid'] == uid]['diagno'].values[0] == 'cn':
                 n_cn_val += 1
             else:
                 n_ad_val += 1

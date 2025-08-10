@@ -155,6 +155,9 @@ def train(model, train_dataloader, valid_dataloader, lossfn, optimizer, lr_sched
     num_training_steps = num_epochs * len(train_dataloader)
     progress_bar = tqdm(range(num_training_steps))
     
+    train_step = 0
+    valid_step = 0
+
     with open(log_path, "w") as log:
         for epoch in range(num_epochs):
             model.train()
@@ -201,10 +204,11 @@ def train(model, train_dataloader, valid_dataloader, lossfn, optimizer, lr_sched
             
             log.write(f'Training completed in: {time.time()} seconds\n')
             log.write(f'Loss: {avg_loss}\nAccuracy: {accuracy}\nF1 Score: {f1}\nRecall: {recall}\nPrecision: {precision}\n')
-            wandb.log({"train_loss": avg_loss, "train_ACC": accuracy, "train_F1": f1})
-            
+            wandb.log({"train_loss": avg_loss, "train_ACC": accuracy, "train_F1": f1}, step=train_step)
+            train_step += 1
             # 検証
-            validation_value, rest_values, mismatched_uids_with_probs, predictions_output = evaluation(model, valid_dataloader, lossfn, log, test=False)
+            validation_value, rest_values, mismatched_uids_with_probs, predictions_output = evaluation(model, valid_dataloader, lossfn, log, valid_step, test=False)
+            valid_step += 1
             
             # 最良モデルの保存
             if validation_value > best_value:
@@ -234,10 +238,10 @@ def train(model, train_dataloader, valid_dataloader, lossfn, optimizer, lr_sched
     model.load_state_dict(best_weights)
     
     # 最良のaccuracyの時のmismatch IDと確率を保存
-    mmse_csv_path = './dataset/diagnosis/train/adresso-train-mmse-scores.csv'
+    mmse_csv_path = './dataset/diagnosis/train/text_transcriptions.csv'
     if os.path.exists(mmse_csv_path):
         mmse_df = pd.read_csv(mmse_csv_path)
-        mmse_dict = {str(row['adressfname']): (row['mmse'], row['dx']) for _, row in mmse_df.iterrows()}
+        mmse_dict = {str(row['uid']): (row['diagno']) for _, row in mmse_df.iterrows()}
     else:
         mmse_dict = {}
         print("MMSE scores file not found. Skipping MMSE scores.")
@@ -259,7 +263,7 @@ def train(model, train_dataloader, valid_dataloader, lossfn, optimizer, lr_sched
             f.write(f"{uid}, {prob:.4f}, {mmse}, {dx}\n")
     return model, best_value, rest_best_values
 
-def evaluation(model, dataloader, lossfn, log, test=False):
+def evaluation(model, dataloader, lossfn, log, valid_step, test=False):
     """
     指定されたデータセットでモデルを評価
     Args:
@@ -330,7 +334,10 @@ def evaluation(model, dataloader, lossfn, log, test=False):
         if log is not None:
             log.write(f'Loss: {avg_loss:.4f}\nAccuracy: {accuracy:.4f}\nF1 Score: {f1:.4f}\nRecall: {recall:.4f}\nPrecision: {precision:.4f}\n')
         # wandbに結果を記録（テストか検証かで異なるキーを使用）
-        wandb.log({"test_loss": avg_loss, "test_UAR": accuracy, "test_F1": f1} if test else {"validation_loss": avg_loss, "validation_ACC": accuracy, "validation_F1": f1})
+        if test:
+            wandb.log({"test_loss": avg_loss, "test_UAR": accuracy, "test_F1": f1})
+        else:
+            wandb.log({"validation_loss": avg_loss, "validation_ACC": accuracy, "validation_F1": f1}, step=valid_step)
         return accuracy, [f1, recall, precision], mismatched_uids_with_probs, predictions_output
     else:
         # MMSEラベルがない場合、精度は計算しない

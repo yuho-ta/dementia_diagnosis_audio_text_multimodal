@@ -1,0 +1,250 @@
+2025-08-12 16:56:54,010 - INFO - Using device: cpu
+2025-08-12 16:56:54,010 - INFO - Starting noise augmented classification comparison...
+2025-08-12 16:56:54,010 - INFO - Processing all available noise types
+2025-08-12 16:56:54,010 - INFO - Found 5 noise types: ['original', 'gaussian_noise_light', 'gaussian_noise_medium', 'gaussian_noise_heavy', 'uniform_noise']
+2025-08-12 16:56:54,010 - INFO - 
+==================================================
+2025-08-12 16:56:54,011 - INFO - Processing noise type: original
+2025-08-12 16:56:54,011 - INFO - ==================================================
+2025-08-12 16:56:54,011 - INFO - Processing single noise type: original
+2025-08-12 16:56:54,011 - INFO - Starting cross-validation for noise type: original
+2025-08-12 16:56:54,017 - INFO - Loaded 552 samples for noise type: original
+2025-08-12 16:56:54,017 - INFO - Class distribution: {1: 309, 0: 243}
+2025-08-12 16:56:54,018 - INFO - Fold 1/5
+2025-08-12 16:59:00,546 - INFO - Epoch [10/50], Train Loss: 0.6726, Val Loss: 0.6749, Val Acc: 0.5676
+2025-08-12 17:01:05,202 - INFO - Epoch [20/50], Train Loss: 0.6352, Val Loss: 0.6505, Val Acc: 0.5766
+2025-08-12 17:03:11,477 - INFO - Epoch [30/50], Train Loss: 0.5948, Val Loss: 0.6143, Val Acc: 0.6577
+2025-08-12 17:05:17,034 - INFO - Epoch [40/50], Train Loss: 0.5909, Val Loss: 0.6063, Val Acc: 0.6577
+2025-08-12 17:07:22,949 - INFO - Epoch [50/50], Train Loss: 0.5834, Val Loss: 0.6092, Val Acc: 0.6577
+2025-08-12 17:07:25,049 - INFO - Fold 2/5
+2025-08-12 17:09:31,176 - INFO - Epoch [10/50], Train Loss: 0.6605, Val Loss: 0.6633, Val Acc: 0.5676
+2025-08-12 17:11:33,617 - INFO - Epoch [20/50], Train Loss: 0.6337, Val Loss: 0.6349, Val Acc: 0.6577
+2025-08-12 17:13:36,221 - INFO - Epoch [30/50], Train Loss: 0.6131, Val Loss: 0.6210, Val Acc: 0.6937
+2025-08-12 17:15:38,890 - INFO - Epoch [40/50], Train Loss: 0.5969, Val Loss: 0.6066, Val Acc: 0.7027
+2025-08-12 17:17:41,696 - INFO - Epoch [50/50], Train Loss: 0.5920, Val Loss: 0.6084, Val Acc: 0.7117
+2025-08-12 17:17:43,514 - INFO - Fold 3/5
+2025-08-12 17:19:47,652 - INFO - Epoch [10/50], Train Loss: 0.6811, Val Loss: 0.6630, Val Acc: 0.5818
+2025-08-12 17:21:51,038 - INFO - Epoch [20/50], Train Loss: 0.6537, Val Loss: 0.6387, Val Acc: 0.6909
+2025-08-12 17:23:54,493 - INFO - Epoch [30/50], Train Loss: 0.6075, Val Loss: 0.6171, Val Acc: 0.6545
+2025-08-12 17:25:58,214 - INFO - Epoch [40/50], Train Loss: 0.5948, Val Loss: 0.6116, Val Acc: 0.6909
+2025-08-12 17:28:00,470 - INFO - Epoch [50/50], Train Loss: 0.5922, Val Loss: 0.6049, Val Acc: 0.6818
+2025-08-12 17:28:02,515 - INFO - Fold 4/5
+2025-08-12 17:30:04,094 - INFO - Epoch [10/50], Train Loss: 0.6639, Val Loss: 0.6728, Val Acc: 0.5455
+2025-08-12 17:32:04,338 - INFO - Epoch [20/50], Train Loss: 0.6199, Val Loss: 0.6676, Val Acc: 0.5727
+2025-08-12 17:34:04,641 - INFO - Epoch [30/50], Train Loss: 0.5908, Val Loss: 0.6589, Val Acc: 0.5818
+2025-08-12 17:36:04,768 - INFO - Epoch [40/50], Train Loss: 0.5657, Val Loss: 0.6473, Val Acc: 0.6000
+2025-08-12 17:38:05,114 - INFO - Epoch [50/50], Train Loss: 0.5620, Val Loss: 0.6583, Val Acc: 0.6182
+2025-08-12 17:38:07,026 - INFO - Fold 5/5
+2025-08-12 17:40:08,029 - INFO - Epoch [10/50], Train Loss: 0.6721, Val Loss: 0.6771, Val Acc: 0.5636
+2025-08-12 17:42:08,000 - INFO - Epoch [20/50], Train Loss: 0.6352, Val Loss: 0.6485, Val Acc: 0.6091
+2025-08-12 17:44:08,620 - INFO - Epoch [30/50], Train Loss: 0.6009, Val Loss: 0.6262, Val Acc: 0.6455
+2025-08-12 17:46:09,250 - INFO - Epoch [40/50], Train Loss: 0.5809, Val Loss: 0.6252, Val Acc: 0.6091
+2025-08-12 17:48:09,450 - INFO - Epoch [50/50], Train Loss: 0.5716, Val Loss: 0.6212, Val Acc: 0.6455
+2025-08-12 17:48:13,917 - INFO - Results for original:
+2025-08-12 17:48:13,917 - INFO -   Mean Accuracy: 0.6630 ± 0.0318
+2025-08-12 17:48:13,918 - INFO -   Mean F1: 0.6570 ± 0.0290
+2025-08-12 17:48:13,918 - INFO - ✓ Completed processing for original
+2025-08-12 17:48:13,918 - INFO -   Mean Accuracy: 0.6630 ± 0.0318
+2025-08-12 17:48:13,918 - INFO -   Mean F1: 0.6570 ± 0.0290
+2025-08-12 17:48:13,918 - INFO - 
+==================================================
+2025-08-12 17:48:13,918 - INFO - Processing noise type: gaussian_noise_light
+2025-08-12 17:48:13,919 - INFO - ==================================================
+2025-08-12 17:48:13,919 - INFO - Processing single noise type: gaussian_noise_light
+2025-08-12 17:48:13,919 - INFO - Starting cross-validation for noise type: gaussian_noise_light
+2025-08-12 17:48:13,922 - INFO - Loaded 552 samples for noise type: gaussian_noise_light
+2025-08-12 17:48:13,922 - INFO - Class distribution: {1: 309, 0: 243}
+2025-08-12 17:48:13,923 - INFO - Fold 1/5
+2025-08-12 17:50:18,588 - INFO - Epoch [10/50], Train Loss: 0.6596, Val Loss: 0.6582, Val Acc: 0.5586
+2025-08-12 17:52:18,069 - INFO - Epoch [20/50], Train Loss: 0.6370, Val Loss: 0.6286, Val Acc: 0.6306
+2025-08-12 17:54:17,246 - INFO - Epoch [30/50], Train Loss: 0.6031, Val Loss: 0.6160, Val Acc: 0.6937
+2025-08-12 17:56:16,572 - INFO - Epoch [40/50], Train Loss: 0.6014, Val Loss: 0.6145, Val Acc: 0.6757
+2025-08-12 17:58:16,085 - INFO - Epoch [50/50], Train Loss: 0.5957, Val Loss: 0.6099, Val Acc: 0.6757
+2025-08-12 17:58:18,180 - INFO - Fold 2/5
+2025-08-12 18:00:19,022 - INFO - Epoch [10/50], Train Loss: 0.6613, Val Loss: 0.6670, Val Acc: 0.5766
+2025-08-12 18:02:18,954 - INFO - Epoch [20/50], Train Loss: 0.6355, Val Loss: 0.6473, Val Acc: 0.6216
+2025-08-12 18:04:19,101 - INFO - Epoch [30/50], Train Loss: 0.6032, Val Loss: 0.6417, Val Acc: 0.6306
+2025-08-12 18:06:18,855 - INFO - Epoch [40/50], Train Loss: 0.5908, Val Loss: 0.6334, Val Acc: 0.6306
+2025-08-12 18:08:19,205 - INFO - Epoch [50/50], Train Loss: 0.5962, Val Loss: 0.6334, Val Acc: 0.6306
+2025-08-12 18:08:21,312 - INFO - Fold 3/5
+2025-08-12 18:10:22,667 - INFO - Epoch [10/50], Train Loss: 0.6745, Val Loss: 0.6559, Val Acc: 0.5636
+2025-08-12 18:12:23,711 - INFO - Epoch [20/50], Train Loss: 0.6503, Val Loss: 0.6291, Val Acc: 0.6000
+2025-08-12 18:14:24,137 - INFO - Epoch [30/50], Train Loss: 0.6244, Val Loss: 0.6028, Val Acc: 0.6727
+2025-08-12 18:16:23,975 - INFO - Epoch [40/50], Train Loss: 0.6191, Val Loss: 0.6067, Val Acc: 0.6727
+2025-08-12 18:18:24,298 - INFO - Epoch [50/50], Train Loss: 0.6098, Val Loss: 0.6016, Val Acc: 0.6727
+2025-08-12 18:18:26,548 - INFO - Fold 4/5
+2025-08-12 18:20:28,629 - INFO - Epoch [10/50], Train Loss: 0.6588, Val Loss: 0.6730, Val Acc: 0.5636
+2025-08-12 18:22:30,357 - INFO - Epoch [20/50], Train Loss: 0.6270, Val Loss: 0.6743, Val Acc: 0.6182
+2025-08-12 18:24:30,987 - INFO - Epoch [30/50], Train Loss: 0.6188, Val Loss: 0.6607, Val Acc: 0.6182
+2025-08-12 18:26:37,731 - INFO - Epoch [40/50], Train Loss: 0.6016, Val Loss: 0.6563, Val Acc: 0.6545
+2025-08-12 18:28:42,345 - INFO - Epoch [50/50], Train Loss: 0.5980, Val Loss: 0.6533, Val Acc: 0.6455
+2025-08-12 18:28:44,523 - INFO - Fold 5/5
+2025-08-12 18:30:50,032 - INFO - Epoch [10/50], Train Loss: 0.6597, Val Loss: 0.6747, Val Acc: 0.5273
+2025-08-12 18:32:54,862 - INFO - Epoch [20/50], Train Loss: 0.6375, Val Loss: 0.6655, Val Acc: 0.6182
+2025-08-12 18:34:59,151 - INFO - Epoch [30/50], Train Loss: 0.6055, Val Loss: 0.6747, Val Acc: 0.5545
+2025-08-12 18:37:03,699 - INFO - Epoch [40/50], Train Loss: 0.6045, Val Loss: 0.6620, Val Acc: 0.5727
+2025-08-12 18:39:08,552 - INFO - Epoch [50/50], Train Loss: 0.5896, Val Loss: 0.6565, Val Acc: 0.5818
+2025-08-12 18:39:12,580 - INFO - Results for gaussian_noise_light:
+2025-08-12 18:39:12,580 - INFO -   Mean Accuracy: 0.6413 ± 0.0342
+2025-08-12 18:39:12,580 - INFO -   Mean F1: 0.6384 ± 0.0363
+2025-08-12 18:39:12,580 - INFO - ✓ Completed processing for gaussian_noise_light
+2025-08-12 18:39:12,580 - INFO -   Mean Accuracy: 0.6413 ± 0.0342
+2025-08-12 18:39:12,580 - INFO -   Mean F1: 0.6384 ± 0.0363
+2025-08-12 18:39:12,580 - INFO - 
+==================================================
+2025-08-12 18:39:12,580 - INFO - Processing noise type: gaussian_noise_medium
+2025-08-12 18:39:12,580 - INFO - ==================================================
+2025-08-12 18:39:12,580 - INFO - Processing single noise type: gaussian_noise_medium
+2025-08-12 18:39:12,580 - INFO - Starting cross-validation for noise type: gaussian_noise_medium
+2025-08-12 18:39:12,586 - INFO - Loaded 552 samples for noise type: gaussian_noise_medium
+2025-08-12 18:39:12,586 - INFO - Class distribution: {1: 309, 0: 243}
+2025-08-12 18:39:12,587 - INFO - Fold 1/5
+2025-08-12 18:41:21,595 - INFO - Epoch [10/50], Train Loss: 0.6683, Val Loss: 0.6770, Val Acc: 0.5766
+2025-08-12 18:43:31,116 - INFO - Epoch [20/50], Train Loss: 0.6572, Val Loss: 0.6599, Val Acc: 0.5766
+2025-08-12 18:46:25,424 - INFO - Epoch [30/50], Train Loss: 0.6392, Val Loss: 0.6557, Val Acc: 0.6036
+2025-08-12 18:49:22,037 - INFO - Epoch [40/50], Train Loss: 0.6295, Val Loss: 0.6484, Val Acc: 0.6306
+2025-08-12 18:52:17,821 - INFO - Epoch [50/50], Train Loss: 0.6372, Val Loss: 0.6436, Val Acc: 0.6396
+2025-08-12 18:52:20,207 - INFO - Fold 2/5
+2025-08-12 18:55:16,972 - INFO - Epoch [10/50], Train Loss: 0.6675, Val Loss: 0.6748, Val Acc: 0.5766
+2025-08-12 18:58:13,275 - INFO - Epoch [20/50], Train Loss: 0.6459, Val Loss: 0.6633, Val Acc: 0.5676
+2025-08-12 19:01:09,975 - INFO - Epoch [30/50], Train Loss: 0.6251, Val Loss: 0.6519, Val Acc: 0.5946
+2025-08-12 19:04:06,779 - INFO - Epoch [40/50], Train Loss: 0.6223, Val Loss: 0.6647, Val Acc: 0.6396
+2025-08-12 19:07:03,181 - INFO - Epoch [50/50], Train Loss: 0.6240, Val Loss: 0.6550, Val Acc: 0.6396
+2025-08-12 19:07:05,488 - INFO - Fold 3/5
+2025-08-12 19:10:02,498 - INFO - Epoch [10/50], Train Loss: 0.6713, Val Loss: 0.6618, Val Acc: 0.6273
+2025-08-12 19:12:59,026 - INFO - Epoch [20/50], Train Loss: 0.6543, Val Loss: 0.6417, Val Acc: 0.6455
+2025-08-12 19:15:55,009 - INFO - Epoch [30/50], Train Loss: 0.6334, Val Loss: 0.6358, Val Acc: 0.6182
+2025-08-12 19:18:52,404 - INFO - Epoch [40/50], Train Loss: 0.6327, Val Loss: 0.6279, Val Acc: 0.6818
+2025-08-12 19:21:49,178 - INFO - Epoch [50/50], Train Loss: 0.6260, Val Loss: 0.6251, Val Acc: 0.6545
+2025-08-12 19:21:51,207 - INFO - Fold 4/5
+2025-08-12 19:24:49,082 - INFO - Epoch [10/50], Train Loss: 0.6780, Val Loss: 0.6783, Val Acc: 0.5364
+2025-08-12 19:27:45,982 - INFO - Epoch [20/50], Train Loss: 0.6517, Val Loss: 0.6783, Val Acc: 0.5273
+2025-08-12 19:30:42,301 - INFO - Epoch [30/50], Train Loss: 0.6308, Val Loss: 0.6866, Val Acc: 0.5909
+2025-08-12 19:33:38,806 - INFO - Epoch [40/50], Train Loss: 0.6171, Val Loss: 0.6948, Val Acc: 0.6000
+2025-08-12 19:36:35,289 - INFO - Epoch [50/50], Train Loss: 0.6010, Val Loss: 0.6828, Val Acc: 0.6000
+2025-08-12 19:36:37,476 - INFO - Fold 5/5
+2025-08-12 19:39:35,135 - INFO - Epoch [10/50], Train Loss: 0.6657, Val Loss: 0.6773, Val Acc: 0.5455
+2025-08-12 19:42:31,881 - INFO - Epoch [20/50], Train Loss: 0.6435, Val Loss: 0.6644, Val Acc: 0.5182
+2025-08-12 19:45:26,675 - INFO - Epoch [30/50], Train Loss: 0.6295, Val Loss: 0.6673, Val Acc: 0.5727
+2025-08-12 19:48:21,343 - INFO - Epoch [40/50], Train Loss: 0.6227, Val Loss: 0.6634, Val Acc: 0.5909
+2025-08-12 19:51:15,570 - INFO - Epoch [50/50], Train Loss: 0.6141, Val Loss: 0.6568, Val Acc: 0.5636
+2025-08-12 19:51:20,703 - INFO - Results for gaussian_noise_medium:
+2025-08-12 19:51:20,703 - INFO -   Mean Accuracy: 0.6195 ± 0.0333
+2025-08-12 19:51:20,704 - INFO -   Mean F1: 0.6112 ± 0.0344
+2025-08-12 19:51:20,704 - INFO - ✓ Completed processing for gaussian_noise_medium
+2025-08-12 19:51:20,704 - INFO -   Mean Accuracy: 0.6195 ± 0.0333
+2025-08-12 19:51:20,704 - INFO -   Mean F1: 0.6112 ± 0.0344
+2025-08-12 19:51:20,705 - INFO - 
+==================================================
+2025-08-12 19:51:20,705 - INFO - Processing noise type: gaussian_noise_heavy
+2025-08-12 19:51:20,705 - INFO - ==================================================
+2025-08-12 19:51:20,705 - INFO - Processing single noise type: gaussian_noise_heavy
+2025-08-12 19:51:20,705 - INFO - Starting cross-validation for noise type: gaussian_noise_heavy
+2025-08-12 19:51:20,713 - INFO - Loaded 552 samples for noise type: gaussian_noise_heavy
+2025-08-12 19:51:20,713 - INFO - Class distribution: {1: 309, 0: 243}
+2025-08-12 19:51:20,715 - INFO - Fold 1/5
+2025-08-12 19:54:22,870 - INFO - Epoch [10/50], Train Loss: 0.6674, Val Loss: 0.6737, Val Acc: 0.5586
+2025-08-12 19:57:19,221 - INFO - Epoch [20/50], Train Loss: 0.6524, Val Loss: 0.6709, Val Acc: 0.5586
+2025-08-12 20:00:17,603 - INFO - Epoch [30/50], Train Loss: 0.6481, Val Loss: 0.6535, Val Acc: 0.5856
+2025-08-12 20:02:31,752 - INFO - Epoch [40/50], Train Loss: 0.6463, Val Loss: 0.6500, Val Acc: 0.5946
+2025-08-12 20:04:34,095 - INFO - Epoch [50/50], Train Loss: 0.6318, Val Loss: 0.6522, Val Acc: 0.5856
+2025-08-12 20:04:35,897 - INFO - Fold 2/5
+2025-08-12 20:06:38,841 - INFO - Epoch [10/50], Train Loss: 0.6718, Val Loss: 0.6906, Val Acc: 0.5135
+2025-08-12 20:08:40,070 - INFO - Epoch [20/50], Train Loss: 0.6595, Val Loss: 0.6880, Val Acc: 0.5135
+2025-08-12 20:10:42,216 - INFO - Epoch [30/50], Train Loss: 0.6503, Val Loss: 0.6737, Val Acc: 0.5405
+2025-08-12 20:12:44,699 - INFO - Epoch [40/50], Train Loss: 0.6463, Val Loss: 0.6858, Val Acc: 0.5676
+2025-08-12 20:14:46,631 - INFO - Epoch [50/50], Train Loss: 0.6348, Val Loss: 0.6871, Val Acc: 0.5495
+2025-08-12 20:14:48,855 - INFO - Fold 3/5
+2025-08-12 20:16:51,326 - INFO - Epoch [10/50], Train Loss: 0.6716, Val Loss: 0.6524, Val Acc: 0.6000
+2025-08-12 20:18:53,210 - INFO - Epoch [20/50], Train Loss: 0.6711, Val Loss: 0.6566, Val Acc: 0.6818
+2025-08-12 20:20:54,691 - INFO - Epoch [30/50], Train Loss: 0.6673, Val Loss: 0.6392, Val Acc: 0.5818
+2025-08-12 20:22:56,421 - INFO - Epoch [40/50], Train Loss: 0.6520, Val Loss: 0.6424, Val Acc: 0.6727
+2025-08-12 20:24:58,411 - INFO - Epoch [50/50], Train Loss: 0.6559, Val Loss: 0.6385, Val Acc: 0.6727
+2025-08-12 20:25:00,213 - INFO - Fold 4/5
+2025-08-12 20:27:02,904 - INFO - Epoch [10/50], Train Loss: 0.6734, Val Loss: 0.6743, Val Acc: 0.5545
+2025-08-12 20:29:04,851 - INFO - Epoch [20/50], Train Loss: 0.6637, Val Loss: 0.6776, Val Acc: 0.5455
+2025-08-12 20:31:05,966 - INFO - Epoch [30/50], Train Loss: 0.6354, Val Loss: 0.6858, Val Acc: 0.5091
+2025-08-12 20:33:07,775 - INFO - Epoch [40/50], Train Loss: 0.6350, Val Loss: 0.6968, Val Acc: 0.5182
+2025-08-12 20:35:08,910 - INFO - Epoch [50/50], Train Loss: 0.6335, Val Loss: 0.7001, Val Acc: 0.5273
+2025-08-12 20:35:10,998 - INFO - Fold 5/5
+2025-08-12 20:37:13,340 - INFO - Epoch [10/50], Train Loss: 0.6769, Val Loss: 0.6795, Val Acc: 0.5364
+2025-08-12 20:39:12,905 - INFO - Epoch [20/50], Train Loss: 0.6582, Val Loss: 0.6733, Val Acc: 0.5545
+2025-08-12 20:41:11,435 - INFO - Epoch [30/50], Train Loss: 0.6493, Val Loss: 0.6680, Val Acc: 0.5273
+2025-08-12 20:43:09,877 - INFO - Epoch [40/50], Train Loss: 0.6459, Val Loss: 0.6714, Val Acc: 0.5273
+2025-08-12 20:45:08,234 - INFO - Epoch [50/50], Train Loss: 0.6371, Val Loss: 0.6779, Val Acc: 0.5273
+2025-08-12 20:45:13,117 - INFO - Results for gaussian_noise_heavy:
+2025-08-12 20:45:13,117 - INFO -   Mean Accuracy: 0.5725 ± 0.0545
+2025-08-12 20:45:13,118 - INFO -   Mean F1: 0.5587 ± 0.0510
+2025-08-12 20:45:13,118 - INFO - ✓ Completed processing for gaussian_noise_heavy
+2025-08-12 20:45:13,118 - INFO -   Mean Accuracy: 0.5725 ± 0.0545
+2025-08-12 20:45:13,118 - INFO -   Mean F1: 0.5587 ± 0.0510
+2025-08-12 20:45:13,118 - INFO - 
+==================================================
+2025-08-12 20:45:13,118 - INFO - Processing noise type: uniform_noise
+2025-08-12 20:45:13,118 - INFO - ==================================================
+2025-08-12 20:45:13,118 - INFO - Processing single noise type: uniform_noise
+2025-08-12 20:45:13,118 - INFO - Starting cross-validation for noise type: uniform_noise
+2025-08-12 20:45:13,122 - INFO - Loaded 552 samples for noise type: uniform_noise
+2025-08-12 20:45:13,123 - INFO - Class distribution: {1: 309, 0: 243}
+2025-08-12 20:45:13,123 - INFO - Fold 1/5
+2025-08-12 20:47:15,674 - INFO - Epoch [10/50], Train Loss: 0.6730, Val Loss: 0.6780, Val Acc: 0.5225
+2025-08-12 20:49:13,473 - INFO - Epoch [20/50], Train Loss: 0.6623, Val Loss: 0.6721, Val Acc: 0.5766
+2025-08-12 20:51:11,253 - INFO - Epoch [30/50], Train Loss: 0.6571, Val Loss: 0.6627, Val Acc: 0.5676
+2025-08-12 20:53:09,626 - INFO - Epoch [40/50], Train Loss: 0.6490, Val Loss: 0.6639, Val Acc: 0.5766
+2025-08-12 20:55:16,203 - INFO - Epoch [50/50], Train Loss: 0.6410, Val Loss: 0.6643, Val Acc: 0.5676
+2025-08-12 20:55:18,285 - INFO - Fold 2/5
+2025-08-12 20:57:19,853 - INFO - Epoch [10/50], Train Loss: 0.6579, Val Loss: 0.6936, Val Acc: 0.5315
+2025-08-12 20:59:18,326 - INFO - Epoch [20/50], Train Loss: 0.6595, Val Loss: 0.6902, Val Acc: 0.5135
+2025-08-12 21:01:16,659 - INFO - Epoch [30/50], Train Loss: 0.6432, Val Loss: 0.6875, Val Acc: 0.5676
+2025-08-12 21:03:14,877 - INFO - Epoch [40/50], Train Loss: 0.6408, Val Loss: 0.6951, Val Acc: 0.5405
+2025-08-12 21:05:12,898 - INFO - Epoch [50/50], Train Loss: 0.6479, Val Loss: 0.6951, Val Acc: 0.5495
+2025-08-12 21:05:14,767 - INFO - Fold 3/5
+2025-08-12 21:07:14,093 - INFO - Epoch [10/50], Train Loss: 0.6765, Val Loss: 0.6498, Val Acc: 0.5727
+2025-08-12 21:09:12,697 - INFO - Epoch [20/50], Train Loss: 0.6669, Val Loss: 0.6581, Val Acc: 0.5727
+2025-08-12 21:11:10,771 - INFO - Epoch [30/50], Train Loss: 0.6531, Val Loss: 0.6384, Val Acc: 0.6000
+2025-08-12 21:13:09,448 - INFO - Epoch [40/50], Train Loss: 0.6642, Val Loss: 0.6398, Val Acc: 0.6182
+2025-08-12 21:15:07,715 - INFO - Epoch [50/50], Train Loss: 0.6657, Val Loss: 0.6352, Val Acc: 0.6364
+2025-08-12 21:15:09,869 - INFO - Fold 4/5
+2025-08-12 21:17:09,352 - INFO - Epoch [10/50], Train Loss: 0.6761, Val Loss: 0.6780, Val Acc: 0.5636
+2025-08-12 21:19:08,118 - INFO - Epoch [20/50], Train Loss: 0.6580, Val Loss: 0.6877, Val Acc: 0.5182
+2025-08-12 21:21:11,516 - INFO - Epoch [30/50], Train Loss: 0.6384, Val Loss: 0.6895, Val Acc: 0.4636
+2025-08-12 21:23:13,135 - INFO - Epoch [40/50], Train Loss: 0.6426, Val Loss: 0.6993, Val Acc: 0.5182
+2025-08-12 21:25:15,064 - INFO - Epoch [50/50], Train Loss: 0.6320, Val Loss: 0.6933, Val Acc: 0.5182
+2025-08-12 21:25:16,914 - INFO - Fold 5/5
+2025-08-12 21:27:20,088 - INFO - Epoch [10/50], Train Loss: 0.6689, Val Loss: 0.6765, Val Acc: 0.5636
+2025-08-12 21:29:22,190 - INFO - Epoch [20/50], Train Loss: 0.6649, Val Loss: 0.6768, Val Acc: 0.5455
+2025-08-12 21:31:24,568 - INFO - Epoch [30/50], Train Loss: 0.6524, Val Loss: 0.6779, Val Acc: 0.4909
+2025-08-12 21:33:27,239 - INFO - Epoch [40/50], Train Loss: 0.6505, Val Loss: 0.6763, Val Acc: 0.4636
+2025-08-12 21:35:29,313 - INFO - Epoch [50/50], Train Loss: 0.6499, Val Loss: 0.6750, Val Acc: 0.4636
+2025-08-12 21:35:33,850 - INFO - Results for uniform_noise:
+2025-08-12 21:35:33,850 - INFO -   Mean Accuracy: 0.5471 ± 0.0569
+2025-08-12 21:35:33,850 - INFO -   Mean F1: 0.5228 ± 0.0500
+2025-08-12 21:35:33,850 - INFO - ✓ Completed processing for uniform_noise
+2025-08-12 21:35:33,850 - INFO -   Mean Accuracy: 0.5471 ± 0.0569
+2025-08-12 21:35:33,850 - INFO -   Mean F1: 0.5228 ± 0.0500
+2025-08-12 21:35:33,850 - INFO - 
+==================================================
+2025-08-12 21:35:33,850 - INFO - SUMMARY OF ALL NOISE TYPES
+2025-08-12 21:35:33,850 - INFO - ==================================================
+2025-08-12 21:35:33,850 - INFO - 1. original:
+2025-08-12 21:35:33,850 - INFO -    Accuracy: 0.6630 ± 0.0318
+2025-08-12 21:35:33,851 - INFO -    F1 Score: 0.6570 ± 0.0290
+2025-08-12 21:35:33,851 - INFO - 2. gaussian_noise_light:
+2025-08-12 21:35:33,851 - INFO -    Accuracy: 0.6413 ± 0.0342
+2025-08-12 21:35:33,851 - INFO -    F1 Score: 0.6384 ± 0.0363
+2025-08-12 21:35:33,851 - INFO - 3. gaussian_noise_medium:
+2025-08-12 21:35:33,851 - INFO -    Accuracy: 0.6195 ± 0.0333
+2025-08-12 21:35:33,851 - INFO -    F1 Score: 0.6112 ± 0.0344
+2025-08-12 21:35:33,851 - INFO - 4. gaussian_noise_heavy:
+2025-08-12 21:35:33,851 - INFO -    Accuracy: 0.5725 ± 0.0545
+2025-08-12 21:35:33,852 - INFO -    F1 Score: 0.5587 ± 0.0510
+2025-08-12 21:35:33,852 - INFO - 5. uniform_noise:
+2025-08-12 21:35:33,852 - INFO -    Accuracy: 0.5471 ± 0.0569
+2025-08-12 21:35:33,852 - INFO -    F1 Score: 0.5228 ± 0.0500
+2025-08-12 21:35:33,852 - INFO - 
+🏆 BEST PERFORMANCE: original
+2025-08-12 21:35:33,852 - INFO -    Accuracy: 0.6630 ± 0.0318
+2025-08-12 21:35:33,852 - INFO -    F1 Score: 0.6570 ± 0.0290
+2025-08-12 21:35:33,854 - INFO - 
+Summary saved to: results\noise_augmented_classification\all_noise_types_summary.csv
+2025-08-12 21:35:33,854 - INFO - Noise augmented classification comparison completed!

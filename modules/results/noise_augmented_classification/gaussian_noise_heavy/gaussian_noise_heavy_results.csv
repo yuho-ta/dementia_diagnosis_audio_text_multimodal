@@ -1,0 +1,2 @@
+noise_type,mean_accuracy,std_accuracy,mean_f1,std_f1
+gaussian_noise_heavy,0.5724815724815725,0.05446920712323692,0.558655817918603,0.05100584975064935

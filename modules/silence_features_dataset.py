@@ -10,7 +10,8 @@ import pandas as pd
 import numpy as np
 import torch
 import os
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, StratifiedGroupKFold
+import re
 
 # データパス設定
 root_silence_path = os.path.join('dataset', 'diagnosis', 'train', 'silence_features')  # サイレンス特徴量ファイルのパス
@@ -142,17 +143,51 @@ def get_silence_dataloaders(config, kfold_number=0):
 
     return train_dataloader, validation_dataloader
 
+def extract_par_id_from_cha_file(cha_file_path):
+    """CHAファイルからPARのIDを抽出する"""
+    try:
+        with open(cha_file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            
+        # @ID行でPARのIDを探す
+        par_id_match = re.search(r'@ID:\s*eng\|Pitt\|PAR\|.*', content)
+        if par_id_match:
+            return par_id_match.group(0)
+        return None
+    except Exception as e:
+        print(f"エラー: {cha_file_path} を読み込めませんでした: {e}")
+        return None
+
+def get_subject_id_from_cha_file(uid, diagno):
+    """UIDと診断カテゴリからCHAファイルを探してPAR IDを抽出する"""
+    # CHAファイルのパスを構築
+    cha_file_path = os.path.join('dataset', 'diagnosis', 'train', 'segmentation', diagno, f"{uid}.cha")
+    
+    if os.path.exists(cha_file_path):
+        par_id = extract_par_id_from_cha_file(cha_file_path)
+        if par_id:
+            # PAR IDから被験者ID部分を抽出（例：@ID: eng|Pitt|PAR|59;|male|ProbableAD||Participant|11|| → 59）
+            par_id_match = re.search(r'@ID:\s*eng\|Pitt\|PAR\|(\d+);', par_id)
+            if par_id_match:
+                return par_id_match.group(1)
+    
+    # CHAファイルが見つからない場合やPAR IDが抽出できない場合は、ファイル名から抽出
+    print(f"Warning: CHA file not found or PAR ID extraction failed for {uid}, falling back to filename extraction")
+    return uid.split('-')[0] if '-' in uid else uid
+
 def set_silence_splits():
     """
-    サイレンス特徴量用のK-Fold交差検証分割を作成・保存
-    - 5分割のStratified K-Fold交差検証（クラスバランスを保持）
+    サイレンス特徴量用のK-Fold交差検証分割を作成・保存（被験者IDベース）
+    - 5分割のStratifiedGroupKFold交差検証（クラスバランスを保持、被験者IDベース分割）
     - 各foldの訓練用・検証用UIDをnumpyファイルとして保存
     - 実際に存在するサイレンス特徴量ファイルのみを使用
+    - 同じ被験者のデータがtrain/testに混在しないように分割
     """
     # ラベル情報のCSVを読み込み
     labels_pd = pd.read_csv(csv_labels_path)
     available_uids = []
     available_labels = []
+    available_subject_ids = []  # 被験者IDを追加
 
     # 音声モデルによるファイル名の変更（簡易的な設定オブジェクトを作成）
     class Config:
@@ -171,9 +206,15 @@ def set_silence_splits():
                                             row['uid'] + '_silence_only' + audio_data + '.pt')
         
         if os.path.exists(silence_features_path):
-            available_uids.append(row['uid'])
+            uid = row['uid']
+            diagno = row['diagno']
+            available_uids.append(uid)
             # 診断結果を数値に変換（cn=0, ad=1）
-            available_labels.append(0 if row['diagno'] == "cn" else 1)
+            available_labels.append(0 if diagno == "cn" else 1)
+            
+            # CHAファイルから被験者IDを抽出
+            subject_id = get_subject_id_from_cha_file(uid, diagno)
+            available_subject_ids.append(subject_id)
         else:
             print(f"Skipping {row['uid']}: silence features file not found")
 
@@ -183,12 +224,24 @@ def set_silence_splits():
     splits_dir = os.path.join('dataset', 'diagnosis', 'train', 'splits')
     os.makedirs(splits_dir, exist_ok=True)
 
-    # 5分割のStratified K-Fold交差検証を実行
-    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    # 5分割のStratifiedGroupKFold交差検証を実行
+    sgkf = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
 
     # 各foldの訓練用・検証用インデックスを取得し、ファイルに保存
-    for i, (train_index, test_index) in enumerate(skf.split(available_uids, available_labels)):
-        print(f"Fold {i}: TRAIN:", len(train_index), "TEST:", len(test_index))
+    for i, (train_index, test_index) in enumerate(sgkf.split(available_uids, available_labels, groups=available_subject_ids)):
+        print(f"Fold {i}: TRAIN subjects: {len(set([available_subject_ids[j] for j in train_index]))}, TEST subjects: {len(set([available_subject_ids[j] for j in test_index]))}")
+        print(f"Fold {i}: TRAIN samples: {len(train_index)}, TEST samples: {len(test_index)}")
+        
+        # 被験者IDの重複チェック
+        train_subjects = set([available_subject_ids[j] for j in train_index])
+        test_subjects = set([available_subject_ids[j] for j in test_index])
+        overlap = train_subjects.intersection(test_subjects)
+        
+        if overlap:
+            print(f"WARNING: Fold {i} has overlapping subjects: {overlap}")
+        else:
+            print(f"Fold {i}: No overlapping subjects ✓")
+        
         np.save(os.path.join(splits_dir, 'train_uids' + str(i)), np.array(available_uids)[train_index])
         np.save(os.path.join(splits_dir, 'val_uids' + str(i)), np.array(available_uids)[test_index])
 

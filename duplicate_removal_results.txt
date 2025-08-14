@@ -1,0 +1,263 @@
+=== 重複ファイル削除結果 ===
+
+保持されたファイル:
+  ad/001-0.cha
+  ad/005-2.cha
+  ad/007-3.cha
+  ad/010-1.cha
+  ad/051-2.cha
+  ad/062-3.cha
+  ad/089-0.cha
+  ad/094-1.cha
+  ad/134-3.cha
+  ad/168-0.cha
+  ad/172-2.cha
+  ad/181-1.cha
+  ad/183-1.cha
+  ad/183-2.cha
+  ad/183-3.cha
+  ad/216-0.cha
+  ad/218-0.cha
+  ad/222-1.cha
+  ad/269-1.cha
+  ad/270-2.cha
+  ad/282-1.cha
+  ad/334-1.cha
+  ad/492-0.cha
+  ad/493-0.cha
+  ad/515-1.cha
+  cn/002-0.cha
+  cn/002-1.cha
+  cn/002-2.cha
+  cn/002-3.cha
+  cn/013-0.cha
+  cn/013-2.cha
+  cn/013-3.cha
+  cn/015-0.cha
+  cn/015-1.cha
+  cn/015-2.cha
+  cn/015-4.cha
+  cn/017-4.cha
+  cn/021-3.cha
+  cn/028-1.cha
+  cn/034-0.cha
+  cn/034-3.cha
+  cn/042-1.cha
+  cn/042-3.cha
+  cn/042-4.cha
+  cn/045-0.cha
+  cn/052-0.cha
+  cn/055-0.cha
+  cn/059-2.cha
+  cn/059-4.cha
+  cn/068-0.cha
+  cn/068-2.cha
+  cn/068-3.cha
+  cn/071-0.cha
+  cn/071-1.cha
+  cn/071-2.cha
+  cn/071-3.cha
+  cn/071-4.cha
+  cn/073-1.cha
+  cn/086-0.cha
+  cn/086-4.cha
+  cn/092-1.cha
+  cn/093-0.cha
+  cn/093-1.cha
+  cn/105-1.cha
+  cn/109-1.cha
+  cn/113-0.cha
+  cn/113-3.cha
+  cn/118-0.cha
+  cn/118-2.cha
+  cn/121-2.cha
+  cn/121-4.cha
+  cn/130-1.cha
+  cn/130-2.cha
+  cn/130-3.cha
+  cn/137-0.cha
+  cn/143-3.cha
+  cn/150-1.cha
+  cn/158-0.cha
+  cn/166-0.cha
+  cn/175-1.cha
+  cn/227-0.cha
+  cn/232-0.cha
+  cn/232-1.cha
+  cn/248-0.cha
+  cn/332-0.cha
+
+削除されたファイル:
+  ad/043-0.cha
+    - 削除: ad/043-0_silence_combined.mp3
+  ad/164-2.cha
+  ad/293-1.cha
+    - 削除: ad/293-1_silence_combined.mp3
+  ad/362-1.cha
+  ad/029-0.cha
+    - 削除: ad/029-0_silence_combined.mp3
+  ad/226-0.cha
+  ad/368-0.cha
+  ad/190-1.cha
+  ad/190-2.cha
+    - 削除: ad/190-2_silence_combined.mp3
+  ad/650-0.cha
+    - 削除: ad/650-0_silence_combined.mp3
+  ad/450-0.cha
+    - 削除: ad/450-0_silence_combined.mp3
+  ad/181-2.cha
+  ad/289-2.cha
+  ad/237-2.cha
+    - 削除: ad/237-2_silence_combined.mp3
+  ad/551-0.cha
+    - 削除: ad/551-0_silence_combined.mp3
+  ad/184-1.cha
+    - 削除: ad/184-1_silence_combined.mp3
+  ad/184-2.cha
+  ad/213-2.cha
+    - 削除: ad/213-2_silence_combined.mp3
+  ad/213-3.cha
+    - 削除: ad/213-3_silence_combined.mp3
+  ad/291-1.cha
+  ad/264-0.cha
+    - 削除: ad/264-0_silence_combined.mp3
+  ad/488-1.cha
+  ad/238-0.cha
+    - 削除: ad/238-0_silence_combined.mp3
+  ad/703-0.cha
+  ad/702-0.cha
+  ad/369-0.cha
+    - 削除: ad/369-0_silence_combined.mp3
+  ad/349-1.cha
+    - 削除: ad/349-1_silence_combined.mp3
+  ad/497-0.cha
+    - 削除: ad/497-0_silence_combined.mp3
+  ad/591-0.cha
+    - 削除: ad/591-0_silence_combined.mp3
+  ad/493-1.cha
+    - 削除: ad/493-1_silence_combined.mp3
+  ad/698-0.cha
+    - 削除: ad/698-0_silence_combined.mp3
+  cn/140-0.cha
+    - 削除: cn/140-0_silence_combined.mp3
+  cn/142-0.cha
+    - 削除: cn/142-0_silence_combined.mp3
+  cn/296-0.cha
+    - 削除: cn/296-0_silence_combined.mp3
+  cn/323-1.cha
+  cn/155-0.cha
+    - 削除: cn/155-0_silence_combined.mp3
+  cn/296-2.cha
+    - 削除: cn/296-2_silence_combined.mp3
+  cn/140-3.cha
+  cn/092-0.cha
+  cn/114-0.cha
+  cn/092-2.cha
+  cn/114-2.cha
+  cn/092-3.cha
+  cn/114-3.cha
+  cn/167-3.cha
+    - 削除: cn/167-3_silence_combined.mp3
+  cn/118-1.cha
+  cn/209-1.cha
+  cn/211-1.cha
+    - 削除: cn/211-1_silence_combined.mp3
+  cn/209-2.cha
+  cn/211-2.cha
+    - 削除: cn/211-2_silence_combined.mp3
+  cn/266-2.cha
+    - 削除: cn/266-2_silence_combined.mp3
+  cn/028-4.cha
+    - 削除: cn/028-4_silence_combined.mp3
+  cn/059-3.cha
+  cn/118-4.cha
+  cn/121-1.cha
+    - 削除: cn/121-1_silence_combined.mp3
+  cn/128-1.cha
+    - 削除: cn/128-1_silence_combined.mp3
+  cn/709-2.cha
+  cn/225-0.cha
+    - 削除: cn/225-0_silence_combined.mp3
+  cn/266-1.cha
+  cn/280-0.cha
+    - 削除: cn/280-0_silence_combined.mp3
+  cn/256-2.cha
+  cn/096-2.cha
+  cn/105-0.cha
+  cn/141-2.cha
+  cn/175-0.cha
+    - 削除: cn/175-0_silence_combined.mp3
+  cn/105-2.cha
+    - 削除: cn/105-2_silence_combined.mp3
+  cn/175-2.cha
+  cn/175-3.cha
+  cn/229-2.cha
+  cn/208-0.cha
+    - 削除: cn/208-0_silence_combined.mp3
+  cn/121-0.cha
+    - 削除: cn/121-0_silence_combined.mp3
+  cn/138-3.cha
+  cn/118-3.cha
+  cn/225-2.cha
+    - 削除: cn/225-2_silence_combined.mp3
+  cn/086-2.cha
+  cn/142-1.cha
+  cn/155-2.cha
+    - 削除: cn/155-2_silence_combined.mp3
+  cn/155-3.cha
+  cn/274-2.cha
+  cn/166-1.cha
+    - 削除: cn/166-1_silence_combined.mp3
+  cn/322-2.cha
+  cn/166-2.cha
+  cn/107-2.cha
+  cn/318-2.cha
+  cn/631-0.cha
+  cn/209-3.cha
+    - 削除: cn/209-3_silence_combined.mp3
+  cn/280-2.cha
+  cn/137-2.cha
+  cn/109-3.cha
+  cn/114-1.cha
+    - 削除: cn/114-1_silence_combined.mp3
+  cn/109-4.cha
+    - 削除: cn/109-4_silence_combined.mp3
+  cn/171-0.cha
+  cn/302-0.cha
+    - 削除: cn/302-0_silence_combined.mp3
+  cn/142-3.cha
+  cn/275-0.cha
+    - 削除: cn/275-0_silence_combined.mp3
+  cn/139-0.cha
+    - 削除: cn/139-0_silence_combined.mp3
+  cn/124-0.cha
+    - 削除: cn/124-0_silence_combined.mp3
+  cn/145-1.cha
+  cn/171-1.cha
+  cn/145-3.cha
+  cn/172-0.cha
+    - 削除: cn/172-0_silence_combined.mp3
+  cn/137-3.cha
+  cn/196-1.cha
+    - 削除: cn/196-1_silence_combined.mp3
+  cn/229-1.cha
+  cn/242-2.cha
+    - 削除: cn/242-2_silence_combined.mp3
+  cn/298-1.cha
+  cn/150-0.cha
+  cn/167-2.cha
+  cn/627-0.cha
+  cn/686-0.cha
+  cn/322-1.cha
+  cn/292-1.cha
+  cn/323-0.cha
+    - 削除: cn/323-0_silence_combined.mp3
+  cn/242-0.cha
+    - 削除: cn/242-0_silence_combined.mp3
+  cn/245-1.cha
+    - 削除: cn/245-1_silence_combined.mp3
+  cn/245-2.cha
+    - 削除: cn/245-2_silence_combined.mp3
+  cn/255-0.cha
+  cn/336-1.cha
+    - 削除: cn/336-1_silence_combined.mp3

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # =============================
-# ADReSSoデータセット用のK-Fold交差検証分割生成スクリプト
-# - 5分割のK-Fold交差検証用データ分割を作成
+# ADReSSoデータセット用のK-Fold交差検証分割生成スクリプト（被験者IDベース）
+# - 5分割のStratifiedGroupKFold交差検証用データ分割を作成
 # - 各foldの訓練用・検証用データをnumpyファイルとして保存
 # - 分割結果の統計情報を表示
+# - 同じ被験者のデータがtrain/testに混在しないように分割
 # =============================
 
 """
@@ -19,18 +20,19 @@ def main():
     """
     メイン関数
     - CSVファイルの存在確認
-    - K-Fold分割の生成
+    - 被験者IDベースのK-Fold分割の生成
     - 分割結果の統計情報表示
     """
-    print("Generating cross-validation splits...")
-    print("交差検証分割を生成中...")
+    print("Generating subject-based cross-validation splits...")
+    print("被験者IDベースの交差検証分割を生成中...")
     
-    # K-Fold分割を生成
-    # 5分割の交差検証用データ分割を作成し、numpyファイルとして保存
+    # 被験者IDベースのK-Fold分割を生成
+    # 5分割のStratifiedGroupKFold交差検証用データ分割を作成し、numpyファイルとして保存
+    # 同じ被験者のデータがtrain/testに混在しないように分割
     set_splits()
     
-    print("Splits generated successfully!")
-    print("分割が正常に生成されました！")
+    print("Subject-based splits generated successfully!")
+    print("被験者IDベースの分割が正常に生成されました！")
     print("\nSplit statistics:")
     print("分割統計情報:")
     

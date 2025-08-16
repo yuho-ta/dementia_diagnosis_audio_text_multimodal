@@ -1,2 +1,2 @@
-noise_type,mean_accuracy,std_accuracy,mean_f1,std_f1
-original,0.662964782964783,0.03184965193538606,0.6569751478214297,0.029047387275334947
+noise_type,mean_validation_accuracy,std_validation_accuracy,mean_test_accuracy,std_test_accuracy,mean_test_f1,std_test_f1
+original,0.7192660550458716,0.021397988604936885,0.679646017699115,0.02527939266740832,0.6776304286612642,0.026071457125699037

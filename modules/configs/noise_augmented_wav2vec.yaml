@@ -54,17 +54,17 @@ processing:
 classification:
   train:
     batch_size: 64
-    num_epochs: 50
-    learning_rate: 0.00005  
+    num_epochs: 100
+    learning_rate: 0.00004  
     weight_decay: 0.01
     early_stopping: true
-    early_stopping_patience: 20
+    early_stopping_patience: 30
     cross_validation: true
     cross_validation_folds: 5
 
   model:
     pooling: 'mean'  # 'mean', 'cls' (Transformer Encoder用)
-    n_layers: 1      # Transformer Encoder層数
+    n_layers: 2      # Transformer Encoder層数
     dropout: 0.5  # 変動を減らすため下げる
     wav2vec_dim: 768
     hidden_size: 384 # Transformer Encoderの隠れ層サイズ

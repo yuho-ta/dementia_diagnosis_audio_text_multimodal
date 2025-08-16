@@ -1,0 +1,149 @@
+2025-08-15 11:53:44,354 - INFO - Using device: cpu
+2025-08-15 11:53:44,354 - INFO - Starting noise augmented classification comparison with subject-based splitting...
+2025-08-15 11:53:44,354 - INFO - Processing all available noise types with subject-based cross-validation
+2025-08-15 11:53:44,354 - INFO - Using StratifiedGroupKFold to ensure no subject data appears in both train and test sets
+2025-08-15 11:53:44,354 - INFO - Found 2 noise types: ['original']
+2025-08-15 11:53:44,354 - INFO - 
+==================================================
+2025-08-15 11:53:44,354 - INFO - Processing noise type: original
+2025-08-15 11:53:44,354 - INFO - ==================================================
+2025-08-15 11:53:44,354 - INFO - Processing single noise type: original
+2025-08-15 11:53:44,354 - INFO - Starting cross-validation for noise type: original (3-way split)
+2025-08-15 11:53:44,468 - INFO - Subject-level 3-way split: 260 train, 87 validation, 87 test subjects
+2025-08-15 11:53:44,493 - INFO - Loaded 330 train, 109 validation, 113 test samples for noise type: original
+2025-08-15 11:53:44,501 - INFO - Train class distribution: {1: 179, 0: 151}
+2025-08-15 11:53:44,501 - INFO - Validation class distribution: {1: 69, 0: 40}
+2025-08-15 11:53:44,501 - INFO - Test class distribution: {1: 61, 0: 52}
+2025-08-15 11:53:44,501 - INFO - Train subjects: 260, Validation subjects: 87, Test subjects: 87
+2025-08-15 11:53:44,502 - INFO - No overlapping subjects between any sets ✓
+2025-08-15 11:53:44,502 - INFO - Subject sample distribution: min=1, max=5, mean=1.27
+2025-08-15 11:53:44,502 - INFO - Train samples: 330, Validation samples: 109, Test samples: 113
+2025-08-15 11:53:44,503 - INFO - Fold 1/5
+2025-08-15 11:53:44,503 - INFO - Fold 1: No overlapping subjects between train and train-validation
+2025-08-15 11:53:44,503 - INFO - Fold 1: No overlapping subjects between any sets ✓
+2025-08-15 11:53:44,503 - INFO - Fold 1: Train subjects: 209, Train-val subjects: 51
+2025-08-15 11:53:44,503 - INFO - Fold 1: Train samples: 262, Train-val samples: 68
+2025-08-15 11:53:44,507 - DEBUG - Popen(['git', 'rev-parse', '--show-toplevel'], cwd=C:\Users\yuho2\CogniAlign, stdin=None, shell=False, universal_newlines=False)
+2025-08-15 11:53:44,547 - DEBUG - Starting new HTTPS connection (1): api.wandb.ai:443
+2025-08-15 11:53:44,802 - DEBUG - https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+2025-08-15 11:53:45,025 - DEBUG - https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+2025-08-15 11:53:45,309 - DEBUG - Popen(['git', 'cat-file', '--batch-check'], cwd=C:\Users\yuho2\CogniAlign, stdin=<valid stream>, shell=False, universal_newlines=False)
+2025-08-15 11:56:05,935 - INFO - Epoch [10/100], Train Loss: 0.6888, Val Loss: 0.6133, Val Acc: 0.4559
+2025-08-15 11:58:19,920 - INFO - Epoch [20/100], Train Loss: 0.6597, Val Loss: 0.6610, Val Acc: 0.4706
+2025-08-15 12:00:33,518 - INFO - Epoch [30/100], Train Loss: 0.6354, Val Loss: 0.5730, Val Acc: 0.5588
+2025-08-15 12:02:50,273 - INFO - Epoch [40/100], Train Loss: 0.6533, Val Loss: 0.7989, Val Acc: 0.5294
+2025-08-15 12:05:03,169 - INFO - Epoch [50/100], Train Loss: 0.6057, Val Loss: 0.5187, Val Acc: 0.6324
+2025-08-15 12:07:19,147 - INFO - Epoch [60/100], Train Loss: 0.5404, Val Loss: 0.8027, Val Acc: 0.6029
+2025-08-15 12:09:36,975 - INFO - Epoch [70/100], Train Loss: 0.6111, Val Loss: 0.5454, Val Acc: 0.6471
+2025-08-15 12:11:55,086 - INFO - Epoch [80/100], Train Loss: 0.6056, Val Loss: 0.5083, Val Acc: 0.6471
+2025-08-15 12:14:13,111 - INFO - Epoch [90/100], Train Loss: 0.5552, Val Loss: 0.5423, Val Acc: 0.6471
+2025-08-15 12:16:33,493 - INFO - Epoch [100/100], Train Loss: 0.5052, Val Loss: 0.6573, Val Acc: 0.6324
+2025-08-15 12:16:33,499 - INFO - Best model state restored (validation accuracy: 0.6618)
+2025-08-15 12:16:38,201 - DEBUG - Using proactor: IocpProactor
+2025-08-15 12:16:38,517 - INFO - Fold 2/5
+2025-08-15 12:16:38,518 - INFO - Fold 2: No overlapping subjects between train and train-validation
+2025-08-15 12:16:38,518 - INFO - Fold 2: No overlapping subjects between any sets ✓
+2025-08-15 12:16:38,518 - INFO - Fold 2: Train subjects: 207, Train-val subjects: 53
+2025-08-15 12:16:38,518 - INFO - Fold 2: Train samples: 261, Train-val samples: 69
+2025-08-15 12:16:38,532 - DEBUG - Popen(['git', 'cat-file', '--batch-check'], cwd=C:\Users\yuho2\CogniAlign, stdin=<valid stream>, shell=False, universal_newlines=False)
+2025-08-15 12:18:55,344 - INFO - Epoch [10/100], Train Loss: 0.6478, Val Loss: 0.8499, Val Acc: 0.4928
+2025-08-15 12:21:20,225 - INFO - Epoch [20/100], Train Loss: 0.6285, Val Loss: 0.7695, Val Acc: 0.5217
+2025-08-15 12:23:43,174 - INFO - Epoch [30/100], Train Loss: 0.6343, Val Loss: 0.5732, Val Acc: 0.5652
+2025-08-15 12:26:07,292 - INFO - Epoch [40/100], Train Loss: 0.5627, Val Loss: 0.5572, Val Acc: 0.5217
+2025-08-15 12:28:31,111 - INFO - Epoch [50/100], Train Loss: 0.6253, Val Loss: 0.7340, Val Acc: 0.6087
+2025-08-15 12:30:54,568 - INFO - Epoch [60/100], Train Loss: 0.5790, Val Loss: 0.6666, Val Acc: 0.5942
+2025-08-15 12:33:20,091 - INFO - Epoch [70/100], Train Loss: 0.6080, Val Loss: 0.6081, Val Acc: 0.6087
+2025-08-15 12:35:36,428 - INFO - Epoch [80/100], Train Loss: 0.5182, Val Loss: 0.6471, Val Acc: 0.6087
+2025-08-15 12:37:51,880 - INFO - Epoch [90/100], Train Loss: 0.4984, Val Loss: 0.7460, Val Acc: 0.6087
+2025-08-15 12:40:11,428 - INFO - Epoch [100/100], Train Loss: 0.5592, Val Loss: 0.7361, Val Acc: 0.6232
+2025-08-15 12:40:11,429 - INFO - Best model state restored (validation accuracy: 0.6377)
+2025-08-15 12:40:15,014 - DEBUG - Using proactor: IocpProactor
+2025-08-15 12:40:15,316 - INFO - Fold 3/5
+2025-08-15 12:40:15,316 - INFO - Fold 3: No overlapping subjects between train and train-validation
+2025-08-15 12:40:15,317 - INFO - Fold 3: No overlapping subjects between any sets ✓
+2025-08-15 12:40:15,317 - INFO - Fold 3: Train subjects: 208, Train-val subjects: 52
+2025-08-15 12:40:15,317 - INFO - Fold 3: Train samples: 268, Train-val samples: 62
+2025-08-15 12:40:15,330 - DEBUG - Popen(['git', 'cat-file', '--batch-check'], cwd=C:\Users\yuho2\CogniAlign, stdin=<valid stream>, shell=False, universal_newlines=False)
+2025-08-15 12:42:38,349 - INFO - Epoch [10/100], Train Loss: 0.6883, Val Loss: 0.6706, Val Acc: 0.5968
+2025-08-15 12:44:56,054 - INFO - Epoch [20/100], Train Loss: 0.6530, Val Loss: 0.6576, Val Acc: 0.5968
+2025-08-15 12:47:14,503 - INFO - Epoch [30/100], Train Loss: 0.6284, Val Loss: 0.6477, Val Acc: 0.5806
+2025-08-15 12:49:32,913 - INFO - Epoch [40/100], Train Loss: 0.5882, Val Loss: 0.6253, Val Acc: 0.6129
+2025-08-15 12:51:51,134 - INFO - Epoch [50/100], Train Loss: 0.6012, Val Loss: 0.6322, Val Acc: 0.5806
+2025-08-15 12:54:08,836 - INFO - Epoch [60/100], Train Loss: 0.5704, Val Loss: 0.6575, Val Acc: 0.5484
+2025-08-15 12:56:30,536 - INFO - Epoch [70/100], Train Loss: 0.5893, Val Loss: 0.6324, Val Acc: 0.6290
+2025-08-15 12:58:50,940 - INFO - Epoch [80/100], Train Loss: 0.5662, Val Loss: 0.6263, Val Acc: 0.6935
+2025-08-15 13:01:09,410 - INFO - Epoch [90/100], Train Loss: 0.5279, Val Loss: 0.6347, Val Acc: 0.6452
+2025-08-15 13:03:27,692 - INFO - Epoch [100/100], Train Loss: 0.5609, Val Loss: 0.6327, Val Acc: 0.6452
+2025-08-15 13:03:27,699 - INFO - Best model state restored (validation accuracy: 0.7258)
+2025-08-15 13:03:31,091 - DEBUG - Using proactor: IocpProactor
+2025-08-15 13:03:31,535 - INFO - Fold 4/5
+2025-08-15 13:03:31,535 - INFO - Fold 4: No overlapping subjects between train and train-validation
+2025-08-15 13:03:31,536 - INFO - Fold 4: No overlapping subjects between any sets ✓
+2025-08-15 13:03:31,536 - INFO - Fold 4: Train subjects: 208, Train-val subjects: 52
+2025-08-15 13:03:31,536 - INFO - Fold 4: Train samples: 268, Train-val samples: 62
+2025-08-15 13:03:31,542 - DEBUG - Popen(['git', 'cat-file', '--batch-check'], cwd=C:\Users\yuho2\CogniAlign, stdin=<valid stream>, shell=False, universal_newlines=False)
+2025-08-15 13:05:48,986 - INFO - Epoch [10/100], Train Loss: 0.6862, Val Loss: 0.6641, Val Acc: 0.6129
+2025-08-15 13:08:07,150 - INFO - Epoch [20/100], Train Loss: 0.6477, Val Loss: 0.6513, Val Acc: 0.6452
+2025-08-15 13:10:24,218 - INFO - Epoch [30/100], Train Loss: 0.6304, Val Loss: 0.6431, Val Acc: 0.5968
+2025-08-15 13:12:52,470 - INFO - Epoch [40/100], Train Loss: 0.5868, Val Loss: 0.6797, Val Acc: 0.5968
+2025-08-15 13:15:17,022 - INFO - Epoch [50/100], Train Loss: 0.5538, Val Loss: 0.7064, Val Acc: 0.5484
+2025-08-15 13:17:36,239 - INFO - Epoch [60/100], Train Loss: 0.5198, Val Loss: 0.7177, Val Acc: 0.5484
+2025-08-15 13:20:03,552 - INFO - Epoch [70/100], Train Loss: 0.5068, Val Loss: 0.7480, Val Acc: 0.5806
+2025-08-15 13:22:32,048 - INFO - Epoch [80/100], Train Loss: 0.5365, Val Loss: 0.7526, Val Acc: 0.5645
+2025-08-15 13:25:00,000 - INFO - Epoch [90/100], Train Loss: 0.5326, Val Loss: 0.7540, Val Acc: 0.5645
+2025-08-15 13:27:40,424 - INFO - Epoch [100/100], Train Loss: 0.4931, Val Loss: 0.7553, Val Acc: 0.5645
+2025-08-15 13:27:40,426 - INFO - Best model state restored (validation accuracy: 0.6452)
+2025-08-15 13:27:44,384 - DEBUG - Using proactor: IocpProactor
+2025-08-15 13:27:44,478 - INFO - Fold 5/5
+2025-08-15 13:27:44,478 - INFO - Fold 5: No overlapping subjects between train and train-validation
+2025-08-15 13:27:44,479 - INFO - Fold 5: No overlapping subjects between any sets ✓
+2025-08-15 13:27:44,479 - INFO - Fold 5: Train subjects: 208, Train-val subjects: 52
+2025-08-15 13:27:44,479 - INFO - Fold 5: Train samples: 261, Train-val samples: 69
+2025-08-15 13:27:44,489 - DEBUG - Popen(['git', 'cat-file', '--batch-check'], cwd=C:\Users\yuho2\CogniAlign, stdin=<valid stream>, shell=False, universal_newlines=False)
+2025-08-15 13:29:58,628 - INFO - Epoch [10/100], Train Loss: 0.6648, Val Loss: 0.6867, Val Acc: 0.5362
+2025-08-15 13:32:12,215 - INFO - Epoch [20/100], Train Loss: 0.7006, Val Loss: 0.6181, Val Acc: 0.5362
+2025-08-15 13:34:26,074 - INFO - Epoch [30/100], Train Loss: 0.6285, Val Loss: 0.7259, Val Acc: 0.5507
+2025-08-15 13:36:40,553 - INFO - Epoch [40/100], Train Loss: 0.6270, Val Loss: 0.8273, Val Acc: 0.5507
+2025-08-15 13:39:03,191 - INFO - Epoch [50/100], Train Loss: 0.5395, Val Loss: 0.7956, Val Acc: 0.5652
+2025-08-15 13:41:28,244 - INFO - Epoch [60/100], Train Loss: 0.5662, Val Loss: 0.8016, Val Acc: 0.5507
+2025-08-15 13:43:48,952 - INFO - Epoch [70/100], Train Loss: 0.4938, Val Loss: 0.8140, Val Acc: 0.5652
+2025-08-15 13:46:07,610 - INFO - Epoch [80/100], Train Loss: 0.5361, Val Loss: 0.6177, Val Acc: 0.5797
+2025-08-15 13:48:24,571 - INFO - Epoch [90/100], Train Loss: 0.5362, Val Loss: 0.6952, Val Acc: 0.5797
+2025-08-15 13:50:47,078 - INFO - Epoch [100/100], Train Loss: 0.5675, Val Loss: 0.6429, Val Acc: 0.5652
+2025-08-15 13:50:47,079 - INFO - Best model state restored (validation accuracy: 0.6232)
+2025-08-15 13:50:50,609 - DEBUG - Using proactor: IocpProactor
+2025-08-15 13:50:50,977 - DEBUG - Popen(['git', 'cat-file', '--batch-check'], cwd=C:\Users\yuho2\CogniAlign, stdin=<valid stream>, shell=False, universal_newlines=False)
+2025-08-15 13:50:52,651 - DEBUG - Using proactor: IocpProactor
+2025-08-15 13:50:53,132 - INFO - Results for original:
+2025-08-15 13:50:53,132 - INFO -   Validation Accuracy: 0.7193 ± 0.0214
+2025-08-15 13:50:53,132 - INFO -   Test Accuracy: 0.6796 ± 0.0253
+2025-08-15 13:50:53,132 - INFO -   Test F1: 0.6776 ± 0.0261
+2025-08-15 13:50:53,132 - INFO - ✓ Completed processing for original
+2025-08-15 13:50:53,132 - INFO -   Validation Accuracy: 0.7193 ± 0.0214
+2025-08-15 13:50:53,132 - INFO -   Test Accuracy: 0.6796 ± 0.0253
+2025-08-15 13:50:53,132 - INFO -   Test F1: 0.6776 ± 0.0261
+2025-08-15 13:50:53,132 - INFO - 
+
+wandb: Run summary:
+wandb:       cv_mean_test_accuracy 0.67965
+wandb:             cv_mean_test_f1 0.67763
+wandb: cv_mean_validation_accuracy 0.71927
+wandb:        cv_std_test_accuracy 0.02528
+wandb:              cv_std_test_f1 0.02607
+wandb:  cv_std_validation_accuracy 0.0214
+wandb:        fold_1_test_accuracy 0.68142
+wandb:              fold_1_test_f1 0.6749
+wandb:  fold_1_validation_accuracy 0.69725
+wandb:        fold_2_test_accuracy 0.63717
+wandb:              fold_2_test_f1 0.63392
+wandb:  fold_2_validation_accuracy 0.73394
+wandb:        fold_3_test_accuracy 0.68142
+wandb:              fold_3_test_f1 0.68177
+wandb:  fold_3_validation_accuracy 0.75229
+wandb:        fold_4_test_accuracy 0.68142
+wandb:              fold_4_test_f1 0.68192
+wandb:  fold_4_validation_accuracy 0.69725
+wandb:        fold_5_test_accuracy 0.71681
+wandb:              fold_5_test_f1 0.71565
+wandb:  fold_5_validation_accuracy 0.7156
+wandb:

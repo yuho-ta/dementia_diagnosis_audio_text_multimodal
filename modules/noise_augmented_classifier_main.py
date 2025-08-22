@@ -59,48 +59,49 @@ def main():
         # すべてのノイズタイプを処理
         logger.info("Processing all available noise types with subject-based cross-validation")
         logger.info("Using StratifiedGroupKFold to ensure no subject data appears in both train and test sets")
-        available_noise_types = ["gaussian_noise_light"]
-        
+        available_noise_types = [
+            ('gaussian_noise_light', 'gaussian_noise_light', 'original')
+        ]
         logger.info(f"Found {len(available_noise_types)} noise types: {available_noise_types}")
         
         all_results = {}
-        for noise_type in available_noise_types:
+        for train_noise_types, val_noise_types, test_noise_type in available_noise_types:
             logger.info(f"\n{'='*50}")
-            logger.info(f"Processing noise type: {noise_type}")
+            logger.info(f"Processing noise type: train_noise_types={train_noise_types}, val_noise_types={val_noise_types}, test_noise_type={test_noise_type}")
             logger.info(f"{'='*50}")
             
             try:
-                result = process_single_noise_type(noise_type, features_path, classification_config, config, device, output_path)
+                result = process_single_noise_type(train_noise_types, val_noise_types, test_noise_type, features_path, classification_config, config, device, output_path)
                 if result:
-                    all_results[noise_type] = result
-                    logger.info(f"✓ Completed processing for {noise_type}")
+                    all_results[train_noise_types + '_' + val_noise_types + '_' + test_noise_type] = result
+                    logger.info(f"✓ Completed processing for train_noise_types={train_noise_types}, val_noise_types={val_noise_types}, test_noise_type={test_noise_type}")
                     logger.info(f"  Validation Accuracy: {result['mean_validation_accuracy']:.4f} ± {result['std_validation_accuracy']:.4f}")
                     logger.info(f"  Test Accuracy: {result['mean_test_accuracy']:.4f} ± {result['std_test_accuracy']:.4f}")
                     logger.info(f"  Test F1: {result['mean_test_f1']:.4f} ± {result['std_test_f1']:.4f}")
                 else:
-                    logger.error(f"✗ Failed to process noise type: {noise_type}")
+                    logger.error(f"✗ Failed to process noise type: train_noise_types={train_noise_types}, val_noise_types={val_noise_types}, test_noise_type={test_noise_type}")
             except Exception as e:
-                logger.error(f"✗ Error processing noise type {noise_type}: {str(e)}")
+                logger.error(f"✗ Error processing noise type train_noise_types={train_noise_types}, val_noise_types={val_noise_types}, test_noise_type={test_noise_type}: {str(e)}")
                 continue
         
         # 全結果のサマリーを表示
         if all_results:
             logger.info(f"\n{'='*50}")
-            logger.info("SUMMARY OF ALL NOISE TYPES")
+            logger.info("SUMMARY OF ALL NOISE COMBINATIONS")
             logger.info(f"{'='*50}")
             
             # 結果をテスト精度順にソート
             sorted_results = sorted(all_results.items(), key=lambda x: x[1]['mean_test_accuracy'], reverse=True)
             
-            for i, (noise_type, result) in enumerate(sorted_results, 1):
-                logger.info(f"{i}. {noise_type}:")
+            for i, (noise_combination, result) in enumerate(sorted_results, 1):
+                logger.info(f"{i}. {noise_combination}:")
                 logger.info(f"   Validation Accuracy: {result['mean_validation_accuracy']:.4f} ± {result['std_validation_accuracy']:.4f}")
                 logger.info(f"   Test Accuracy: {result['mean_test_accuracy']:.4f} ± {result['std_test_accuracy']:.4f}")
                 logger.info(f"   Test F1 Score: {result['mean_test_f1']:.4f} ± {result['std_test_f1']:.4f}")
             
             # 最良の結果を強調（テスト精度で評価）
-            best_noise_type, best_result = sorted_results[0]
-            logger.info(f"\n🏆 BEST PERFORMANCE: {best_noise_type}")
+            best_noise_combination, best_result = sorted_results[0]
+            logger.info(f"\n🏆 BEST PERFORMANCE: {best_noise_combination}")
             logger.info(f"   Validation Accuracy: {best_result['mean_validation_accuracy']:.4f} ± {best_result['std_validation_accuracy']:.4f}")
             logger.info(f"   Test Accuracy: {best_result['mean_test_accuracy']:.4f} ± {best_result['std_test_accuracy']:.4f}")
             logger.info(f"   Test F1 Score: {best_result['mean_test_f1']:.4f} ± {best_result['std_test_f1']:.4f}")
@@ -108,7 +109,7 @@ def main():
             # 結果をCSVファイルに保存
             summary_df = pd.DataFrame([
                 {
-                    'noise_type': noise_type,
+                    'noise_combination': noise_combination,
                     'mean_validation_accuracy': result['mean_validation_accuracy'],
                     'std_validation_accuracy': result['std_validation_accuracy'],
                     'mean_test_accuracy': result['mean_test_accuracy'],
@@ -116,7 +117,7 @@ def main():
                     'mean_test_f1': result['mean_test_f1'],
                     'std_test_f1': result['std_test_f1']
                 }
-                for noise_type, result in sorted_results
+                for noise_combination, result in sorted_results
             ])
             
             summary_path = os.path.join(output_path, 'all_noise_types_summary.csv')

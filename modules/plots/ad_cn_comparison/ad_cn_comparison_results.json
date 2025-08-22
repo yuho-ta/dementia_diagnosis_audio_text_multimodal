@@ -1,0 +1,25 @@
+{
+  "noise_free": {
+    "total_features": 768,
+    "significant_features": 224,
+    "significant_ratio": 0.2916666666666667,
+    "mean_effect_size": "0.16549039",
+    "max_effect_size": "0.5809356",
+    "ad_samples": 309,
+    "cn_samples": 243
+  },
+  "noisy": {
+    "total_features": 768,
+    "significant_features": 281,
+    "significant_ratio": 0.3658854166666667,
+    "mean_effect_size": "0.18384548",
+    "max_effect_size": "0.6129819",
+    "ad_samples": 309,
+    "cn_samples": 243
+  },
+  "comparison": {
+    "mean_separation_change": "0.018355088",
+    "features_improved": "457",
+    "features_degraded": "311"
+  }
+}

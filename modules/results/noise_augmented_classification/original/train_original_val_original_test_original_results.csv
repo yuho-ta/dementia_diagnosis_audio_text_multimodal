@@ -1,0 +1,2 @@
+train_noise_type,val_noise_type,test_noise_type,mean_validation_accuracy,std_validation_accuracy,mean_test_accuracy,std_test_accuracy,mean_test_f1,std_test_f1
+original,original,original,0.6844036697247706,0.012444642170872043,0.663716814159292,0.02798475805458742,0.6589739354214847,0.030445216990425017

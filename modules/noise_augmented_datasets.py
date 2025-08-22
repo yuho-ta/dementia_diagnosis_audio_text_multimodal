@@ -18,15 +18,38 @@ diagnosis = ['ad', 'cn']
 label_mapping = {'ad': 1, 'cn': 0}
 
 class SubjectSplitter:
-    """被験者IDの分割を管理するクラス（再現性保証）"""
+    """被験者IDの分割を管理するクラス（再現性保証・シングルトン）"""
     
-    def __init__(self, cache_file="subject_splits_common.json"):
-        self.cache_file = cache_file
-        # 再現性のためのseed固定
-        np.random.seed(42)
+    _instance = None
+    _splits_cache = None
+    
+    def __new__(cls, cache_file="subject_splits_common.json"):
+        if cls._instance is None:
+            cls._instance = super(SubjectSplitter, cls).__new__(cls)
+            cls._instance.cache_file = cache_file
+            # 再現性のためのseed固定
+            np.random.seed(42)
+        return cls._instance
     
     def load_or_create_splits(self, subject_list, label_list):
-        """分割結果をキャッシュから読み込むか、新しく生成する"""
+        """分割結果をキャッシュから読み込むか、新しく生成する（シングルトン対応）"""
+        # 既に分割が生成されている場合はそれを返す
+        if self._splits_cache is not None:
+            cached_subjects = set(self._splits_cache['train'] + self._splits_cache['validation'] + self._splits_cache['test'])
+            current_subjects = set(subject_list)
+            
+            logging.info(f"Memory cache check - Cached subjects: {len(cached_subjects)}, Current subjects: {len(current_subjects)}")
+            logging.info(f"Cached subjects: {sorted(cached_subjects)}")
+            logging.info(f"Current subjects: {sorted(current_subjects)}")
+            
+            if cached_subjects == current_subjects:
+                logging.info(f"✓ Using cached subject splits from memory")
+                return self._splits_cache['train'], self._splits_cache['validation'], self._splits_cache['test']
+            else:
+                logging.warning(f"✗ Memory cache mismatch. Regenerating splits.")
+                logging.warning(f"  Missing in cache: {sorted(current_subjects - cached_subjects)}")
+                logging.warning(f"  Extra in cache: {sorted(cached_subjects - current_subjects)}")
+        
         # キャッシュファイルが存在する場合は読み込む
         if os.path.exists(self.cache_file):
             try:
@@ -37,11 +60,17 @@ class SubjectSplitter:
                 cached_subjects = set(cached_splits['train'] + cached_splits['validation'] + cached_splits['test'])
                 current_subjects = set(subject_list)
                 
+                logging.info(f"File cache check - Cached subjects: {len(cached_subjects)}, Current subjects: {len(current_subjects)}")
+                
                 if cached_subjects == current_subjects:
-                    logging.info(f"Loading subject splits from cache: {self.cache_file}")
+                    logging.info(f"✓ Loading subject splits from cache: {self.cache_file}")
+                    # メモリキャッシュに保存
+                    self._splits_cache = cached_splits
                     return cached_splits['train'], cached_splits['validation'], cached_splits['test']
                 else:
-                    logging.warning(f"Cache mismatch. Regenerating splits. Cached: {len(cached_subjects)}, Current: {len(current_subjects)}")
+                    logging.warning(f"✗ File cache mismatch. Regenerating splits.")
+                    logging.warning(f"  Missing in cache: {sorted(current_subjects - cached_subjects)}")
+                    logging.warning(f"  Extra in cache: {sorted(cached_subjects - current_subjects)}")
             except Exception as e:
                 logging.warning(f"Failed to load cache file: {e}")
         
@@ -78,6 +107,9 @@ class SubjectSplitter:
             }
         }
         
+        # メモリキャッシュに保存
+        self._splits_cache = splits_data
+        
         try:
             with open(self.cache_file, 'w') as f:
                 json.dump(splits_data, f, indent=2)
@@ -90,13 +122,13 @@ class SubjectSplitter:
 class NoiseAugmentedDataset(Dataset):
     """ノイズ追加付き特徴量データセット（被験者IDベース3分割対応）"""
     
-    def __init__(self, features_path, train_noise_types='original', val_noise_types='original', test_noise_type='original', n_splits=5, splitter=None):
+    def __init__(self, features_path, train_noise_type='original', val_noise_type='original', test_noise_type='original', n_splits=5, splitter=None):
         # 再現性のためのseed固定
         np.random.seed(42)
         
         self.features_path = features_path
-        self.train_noise_types = train_noise_types
-        self.val_noise_types = val_noise_types
+        self.train_noise_type = train_noise_type
+        self.val_noise_type = val_noise_type
         self.test_noise_type = test_noise_type
         self.splitter = splitter or SubjectSplitter()
         self.data = []
@@ -118,23 +150,23 @@ class NoiseAugmentedDataset(Dataset):
             
             # すべてのノイズタイプのファイルを取得（後で分割時に適切なノイズタイプを選択）
             for file in os.listdir(diagno_path):
-            if file.endswith('.pt'):  # すべてのノイズタイプ
-                file_path = os.path.join(diagno_path, file)
-                # ファイル名からUIDを抽出
-                uid = extract_subject_id_from_filename(file)
-                
-                if uid:  # UIDが抽出できた場合のみ追加
-                    # CHAファイルから被験者IDを抽出
-                    subject_id = get_subject_id_from_cha_file(uid, diagno)
+                if file.endswith('.pt'):  # すべてのノイズタイプ
+                    file_path = os.path.join(diagno_path, file)
+                    # ファイル名からUIDを抽出
+                    uid = extract_subject_id_from_filename(file)
                     
-                    if subject_id not in all_subject_files:
-                        all_subject_files[subject_id] = {}
-                        all_subject_labels[subject_id] = label
-                    
-                    if diagno not in all_subject_files[subject_id]:
-                        all_subject_files[subject_id][diagno] = []
-                    
-                    all_subject_files[subject_id][diagno].append(file_path)
+                    if uid:  # UIDが抽出できた場合のみ追加
+                        # CHAファイルから被験者IDを抽出
+                        subject_id = get_subject_id_from_cha_file(uid, diagno)
+                        
+                        if subject_id not in all_subject_files:
+                            all_subject_files[subject_id] = {}
+                            all_subject_labels[subject_id] = label
+                        
+                        if diagno not in all_subject_files[subject_id]:
+                            all_subject_files[subject_id][diagno] = []
+                        
+                        all_subject_files[subject_id][diagno].append(file_path)
         
         # 被験者IDのリストを作成（診断カテゴリごとにグループ化）
         subject_ids_by_label = {}
@@ -162,6 +194,27 @@ class NoiseAugmentedDataset(Dataset):
         logging.info(f"Validation subjects: {sorted(val_subject_ids)}")
         logging.info(f"Test subjects: {sorted(test_subject_ids)}")
         
+        # 被験者IDごとのラベル分布を確認
+        train_label_dist = {}
+        val_label_dist = {}
+        test_label_dist = {}
+        
+        for subject_id in train_subject_ids:
+            label = all_subject_labels[subject_id]
+            train_label_dist[label] = train_label_dist.get(label, 0) + 1
+        
+        for subject_id in val_subject_ids:
+            label = all_subject_labels[subject_id]
+            val_label_dist[label] = val_label_dist.get(label, 0) + 1
+        
+        for subject_id in test_subject_ids:
+            label = all_subject_labels[subject_id]
+            test_label_dist[label] = test_label_dist.get(label, 0) + 1
+        
+        logging.info(f"Train subject label distribution: {train_label_dist}")
+        logging.info(f"Validation subject label distribution: {val_label_dist}")
+        logging.info(f"Test subject label distribution: {test_label_dist}")
+        
         # トレインデータを構築（指定されたノイズタイプ）
         for subject_id in train_subject_ids:
             if subject_id in all_subject_files:
@@ -171,18 +224,17 @@ class NoiseAugmentedDataset(Dataset):
                     # 指定されたノイズタイプのファイルのみを追加
                     for file_path in file_paths:
                         file_name = os.path.basename(file_path)
-                        # train_noise_typesがリストの場合は複数のノイズタイプを許可
-                        if isinstance(self.train_noise_types, list):
-                            for noise_type in self.train_noise_types:
+                        # train_noise_typeがリストの場合は複数のノイズタイプを許可
+                        if isinstance(self.train_noise_type, list):
+                            for noise_type in self.train_noise_type:
                                 if file_name.endswith(f'_{noise_type}.pt'):
                                     self.data.append(file_path)
                                     self.labels.append(label)
                                     self.subject_ids.append(subject_id)
                                     self.data_types.append('train')
-                                    break  # 1つのファイルが複数のノイズタイプにマッチしないように
                         else:
                             # 単一のノイズタイプの場合
-                            if file_name.endswith(f'_{self.train_noise_types}.pt'):
+                            if file_name.endswith(f'_{self.train_noise_type}.pt'):
                                 self.data.append(file_path)
                                 self.labels.append(label)
                                 self.subject_ids.append(subject_id)
@@ -197,18 +249,17 @@ class NoiseAugmentedDataset(Dataset):
                     # 指定されたノイズタイプのファイルのみを追加
                     for file_path in file_paths:
                         file_name = os.path.basename(file_path)
-                        # val_noise_typesがリストの場合は複数のノイズタイプを許可
-                        if isinstance(self.val_noise_types, list):
-                            for noise_type in self.val_noise_types:
+                        # val_noise_typeがリストの場合は複数のノイズタイプを許可
+                        if isinstance(self.val_noise_type, list):
+                            for noise_type in self.val_noise_type:
                                 if file_name.endswith(f'_{noise_type}.pt'):
                                     self.data.append(file_path)
                                     self.labels.append(label)
                                     self.subject_ids.append(subject_id)
                                     self.data_types.append('validation')
-                                    break  # 1つのファイルが複数のノイズタイプにマッチしないように
                         else:
                             # 単一のノイズタイプの場合
-                            if file_name.endswith(f'_{self.val_noise_types}.pt'):
+                            if file_name.endswith(f'_{self.val_noise_type}.pt'):
                                 self.data.append(file_path)
                                 self.labels.append(label)
                                 self.subject_ids.append(subject_id)
@@ -233,8 +284,8 @@ class NoiseAugmentedDataset(Dataset):
         self._generate_cv_indices(n_splits)
         
         # ノイズタイプの情報をログに出力
-        train_noise_str = str(self.train_noise_types) if isinstance(self.train_noise_types, list) else self.train_noise_types
-        val_noise_str = str(self.val_noise_types) if isinstance(self.val_noise_types, list) else self.val_noise_types
+        train_noise_str = str(self.train_noise_type) if isinstance(self.train_noise_type, list) else self.train_noise_type
+        val_noise_str = str(self.val_noise_type) if isinstance(self.val_noise_type, list) else self.val_noise_type
         logging.info(f"Loaded {len([d for d in self.data_types if d == 'train'])} train, {len([d for d in self.data_types if d == 'validation'])} validation, {len([d for d in self.data_types if d == 'test'])} test samples")
         logging.info(f"Train noise types: {train_noise_str}, Validation noise types: {val_noise_str}, Test noise type: {self.test_noise_type}")
         
@@ -395,6 +446,27 @@ class CombinedNoiseDataset(Dataset):
         logging.info(f"Validation subjects: {sorted(val_subject_ids)}")
         logging.info(f"Test subjects: {sorted(test_subject_ids)}")
         
+        # 被験者IDごとのラベル分布を確認
+        train_label_dist = {}
+        val_label_dist = {}
+        test_label_dist = {}
+        
+        for subject_id in train_subject_ids:
+            label = all_subject_labels[subject_id]
+            train_label_dist[label] = train_label_dist.get(label, 0) + 1
+        
+        for subject_id in val_subject_ids:
+            label = all_subject_labels[subject_id]
+            val_label_dist[label] = val_label_dist.get(label, 0) + 1
+        
+        for subject_id in test_subject_ids:
+            label = all_subject_labels[subject_id]
+            test_label_dist[label] = test_label_dist.get(label, 0) + 1
+        
+        logging.info(f"Train subject label distribution: {train_label_dist}")
+        logging.info(f"Validation subject label distribution: {val_label_dist}")
+        logging.info(f"Test subject label distribution: {test_label_dist}")
+        
         # トレインデータを構築（複数のノイズタイプ）
         for subject_id in train_subject_ids:
             if subject_id in all_subject_files:
@@ -410,7 +482,6 @@ class CombinedNoiseDataset(Dataset):
                                 self.labels.append(label)
                                 self.subject_ids.append(subject_id)
                                 self.data_types.append('train')
-                                break  # 1つのファイルが複数のノイズタイプにマッチしないように
         
         # バリデーションデータを構築（複数のノイズタイプ）
         for subject_id in val_subject_ids:
@@ -427,7 +498,6 @@ class CombinedNoiseDataset(Dataset):
                                 self.labels.append(label)
                                 self.subject_ids.append(subject_id)
                                 self.data_types.append('validation')
-                                break  # 1つのファイルが複数のノイズタイプにマッチしないように
         
         # テストデータを構築（単一のノイズタイプ）
         for subject_id in test_subject_ids:
@@ -443,7 +513,6 @@ class CombinedNoiseDataset(Dataset):
                             self.labels.append(label)
                             self.subject_ids.append(subject_id)
                             self.data_types.append('test')
-                            break  # 1つのファイルが複数のノイズタイプにマッチしないように
         
         # クロスバリデーション用のインデックスを事前に生成（trainデータのみで分割）
         self._generate_cv_indices(n_splits)

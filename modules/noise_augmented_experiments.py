@@ -31,26 +31,26 @@ from noise_augmented_datasets import NoiseAugmentedDataset, CombinedNoiseDataset
 from noise_augmented_model import Wav2VecClassifier
 from noise_augmented_training import train_model, evaluate_model
 
-def cross_validate_noise_type(train_noise_types, val_noise_types, test_noise_type, features_path, classification_config, config, device, output_path, n_splits=None):
+def cross_validate_noise_type(train_noise_type, val_noise_type, test_noise_type, features_path, classification_config, config, device, output_path, n_splits=None):
     """特定のノイズタイプでクロスバリデーションを実行（被験者IDベース3分割）"""
     
     # 設定ファイルからパラメータを取得
     if n_splits is None:
         n_splits = classification_config['train']['cross_validation_folds']
     
-    logging.info(f"Starting cross-validation for noise type: train_noise_types={train_noise_types}, val_noise_types={val_noise_types}, test_noise_type={test_noise_type} (3-way split)")
+    logging.info(f"Starting cross-validation for noise type: train_noise_type={train_noise_type}, val_noise_type={val_noise_type}, test_noise_type={test_noise_type} (3-way split)")
     
     # データセットを作成（被験者レベルで3分割済み、クロスバリデーションインデックスも事前生成済み）
     dataset = NoiseAugmentedDataset(
         features_path=features_path,
-        train_noise_types=train_noise_types,
-        val_noise_types=val_noise_types,
+        train_noise_type=train_noise_type,
+        val_noise_type=val_noise_type,
         test_noise_type=test_noise_type,
         n_splits=n_splits
     )
     
     if len(dataset) == 0:
-        logging.warning(f"No data found for noise type: train_noise_types={train_noise_types}, val_noise_types={val_noise_types}, test_noise_type={test_noise_type}")
+        logging.warning(f"No data found for noise type: train_noise_type={train_noise_type}, val_noise_type={val_noise_type}, test_noise_type={test_noise_type}")
         return None
     
     # 各セットのインデックスを取得
@@ -97,10 +97,10 @@ def cross_validate_noise_type(train_noise_types, val_noise_types, test_noise_typ
         # 各フォールドごとに新しいwandb runを作成
         wandb.init(
             project="noise-augmented-wav2vec-classification",
-            name=f"train_{train_noise_types}_val_{val_noise_types}_test_{test_noise_type}_fold_{fold + 1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            name=f"train_{train_noise_type}_val_{val_noise_type}_test_{test_noise_type}_fold_{fold + 1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
             config={
-                "train_noise_types": train_noise_types,
-                "val_noise_types": val_noise_types,
+                "train_noise_type": train_noise_type,
+                "val_noise_type": val_noise_type,
                 "test_noise_type": test_noise_type,
                 "fold": fold + 1,
                 "model_name": classification_config['model_name'],
@@ -209,8 +209,8 @@ def cross_validate_noise_type(train_noise_types, val_noise_types, test_noise_typ
     std_test_f1 = np.std([r['test_f1'] for r in fold_results])
     
     avg_results = {
-        'train_noise_types': train_noise_types,
-        'val_noise_types': val_noise_types,
+        'train_noise_type': train_noise_type,
+        'val_noise_type': val_noise_type,
         'test_noise_type': test_noise_type,
         'mean_validation_accuracy': mean_validation_acc,
         'std_validation_accuracy': std_validation_acc,
@@ -224,10 +224,10 @@ def cross_validate_noise_type(train_noise_types, val_noise_types, test_noise_typ
     # クロスバリデーション全体の結果を記録するための新しいwandb run
     wandb.init(
         project="noise-augmented-wav2vec-classification",
-        name=f"train_{train_noise_types}_val_{val_noise_types}_test_{test_noise_type}_cv_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        name=f"train_{train_noise_type}_val_{val_noise_type}_test_{test_noise_type}_cv_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
         config={
-            "train_noise_types": train_noise_types,
-            "val_noise_types": val_noise_types,
+            "train_noise_type": train_noise_type,
+            "val_noise_type": val_noise_type,
             "test_noise_type": test_noise_type,
             "cv_folds": n_splits,
             "model_name": classification_config['model_name']
@@ -481,25 +481,25 @@ def cross_validate_noise_combination(train_noise_types, test_noise_type, feature
     
     return avg_results
 
-def process_single_noise_type(train_noise_types, val_noise_types, test_noise_type, features_path, classification_config, config, device, output_path):
+def process_single_noise_type(train_noise_type, val_noise_type, test_noise_type, features_path, classification_config, config, device, output_path):
     """単一のノイズタイプを処理"""
-    logging.info(f"Processing single noise type: {noise_type}")
+    logging.info(f"Processing single noise type: train_noise_type={train_noise_type}, val_noise_type={val_noise_type}, test_noise_type={test_noise_type}")
     
     # クロスバリデーションを実行
-    results = cross_validate_noise_type(train_noise_types=train_noise_types, val_noise_types=val_noise_types, test_noise_type=test_noise_type, features_path=features_path, classification_config=classification_config, config=config, device=device, output_path=output_path)
+    results = cross_validate_noise_type(train_noise_type=train_noise_type, val_noise_type=val_noise_type, test_noise_type=test_noise_type, features_path=features_path, classification_config=classification_config, config=config, device=device, output_path=output_path)
     
     if results is None:
-        logging.error(f"Failed to process noise type: train_noise_types={train_noise_types}, val_noise_types={val_noise_types}, test_noise_type={test_noise_type}")
+        logging.error(f"Failed to process noise type: train_noise_type={train_noise_type}, val_noise_type={val_noise_type}, test_noise_type={test_noise_type}")
         return None
     
     # 結果を保存
-    noise_output_path = os.path.join(output_path, train_noise_types)
+    noise_output_path = os.path.join(output_path, train_noise_type)
     os.makedirs(noise_output_path, exist_ok=True)
     
     # CSVで保存
     results_df = pd.DataFrame([{
-        'train_noise_types': results['train_noise_types'],
-        'val_noise_types': results['val_noise_types'],
+        'train_noise_type': results['train_noise_type'],
+        'val_noise_type': results['val_noise_type'],
         'test_noise_type': results['test_noise_type'],
         'mean_validation_accuracy': results['mean_validation_accuracy'],
         'std_validation_accuracy': results['std_validation_accuracy'],
@@ -509,14 +509,14 @@ def process_single_noise_type(train_noise_types, val_noise_types, test_noise_typ
         'std_test_f1': results['std_test_f1']
     }])
     
-    results_df.to_csv(os.path.join(noise_output_path, f'train_{train_noise_types}_val_{val_noise_types}_test_{test_noise_type}_results.csv'), index=False)
+    results_df.to_csv(os.path.join(noise_output_path, f'train_{train_noise_type}_val_{val_noise_type}_test_{test_noise_type}_results.csv'), index=False)
     
     # 詳細結果をJSONで保存
-    with open(os.path.join(noise_output_path, f'train_{train_noise_types}_val_{val_noise_types}_test_{test_noise_type}_detailed_results.json'), 'w') as f:
+    with open(os.path.join(noise_output_path, f'train_{train_noise_type}_val_{val_noise_type}_test_{test_noise_type}_detailed_results.json'), 'w') as f:
         json.dump(results, f, indent=2, default=str)
     
     # 結果を表示
-    logging.info(f"Results for train_noise_types={train_noise_types}, val_noise_types={val_noise_types}, test_noise_type={test_noise_type}:")
+    logging.info(f"Results for train_noise_type={train_noise_type}, val_noise_type={val_noise_type}, test_noise_type={test_noise_type}:")
     logging.info(f"  Validation Accuracy: {results['mean_validation_accuracy']:.4f} ± {results['std_validation_accuracy']:.4f}")
     logging.info(f"  Test Accuracy: {results['mean_test_accuracy']:.4f} ± {results['std_test_accuracy']:.4f}")
     logging.info(f"  Test F1: {results['mean_test_f1']:.4f} ± {results['std_test_f1']:.4f}")

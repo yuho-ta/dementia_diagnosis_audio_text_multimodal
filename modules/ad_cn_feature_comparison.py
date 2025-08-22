@@ -46,8 +46,8 @@ class ADCNFeatureComparator:
         
         dataset = NoiseAugmentedDataset(
             features_path=self.features_path,
-            train_noise_types='original',
-            val_noise_types='original',
+            train_noise_type='original',
+            val_noise_type='original',
             test_noise_type='original'
         )
         
@@ -59,8 +59,8 @@ class ADCNFeatureComparator:
         
         dataset = NoiseAugmentedDataset(
             features_path=self.features_path,
-            train_noise_types='gaussian_noise_light',
-            val_noise_types='gaussian_noise_light',
+            train_noise_type='gaussian_noise_light',
+            val_noise_type='gaussian_noise_light',
             test_noise_type='gaussian_noise_light'
         )
         

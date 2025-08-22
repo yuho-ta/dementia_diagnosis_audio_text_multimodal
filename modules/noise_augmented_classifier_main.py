@@ -60,28 +60,29 @@ def main():
         logger.info("Processing all available noise types with subject-based cross-validation")
         logger.info("Using StratifiedGroupKFold to ensure no subject data appears in both train and test sets")
         available_noise_types = [
-            ('gaussian_noise_light', 'gaussian_noise_light', 'original')
+            ('gaussian_noise_light', 'gaussian_noise_light', 'original'),
+            ('original', 'original', 'original')
         ]
         logger.info(f"Found {len(available_noise_types)} noise types: {available_noise_types}")
         
         all_results = {}
-        for train_noise_types, val_noise_types, test_noise_type in available_noise_types:
+        for train_noise_type, val_noise_type, test_noise_type in available_noise_types:
             logger.info(f"\n{'='*50}")
-            logger.info(f"Processing noise type: train_noise_types={train_noise_types}, val_noise_types={val_noise_types}, test_noise_type={test_noise_type}")
+            logger.info(f"Processing noise type: train_noise_type={train_noise_type}, val_noise_type={val_noise_type}, test_noise_type={test_noise_type}")
             logger.info(f"{'='*50}")
             
             try:
-                result = process_single_noise_type(train_noise_types, val_noise_types, test_noise_type, features_path, classification_config, config, device, output_path)
+                result = process_single_noise_type(train_noise_type, val_noise_type, test_noise_type, features_path, classification_config, config, device, output_path)
                 if result:
-                    all_results[train_noise_types + '_' + val_noise_types + '_' + test_noise_type] = result
-                    logger.info(f"✓ Completed processing for train_noise_types={train_noise_types}, val_noise_types={val_noise_types}, test_noise_type={test_noise_type}")
+                    all_results[train_noise_type + '_' + val_noise_type + '_' + test_noise_type] = result
+                    logger.info(f"✓ Completed processing for train_noise_type={train_noise_type}, val_noise_type={val_noise_type}, test_noise_type={test_noise_type}")
                     logger.info(f"  Validation Accuracy: {result['mean_validation_accuracy']:.4f} ± {result['std_validation_accuracy']:.4f}")
                     logger.info(f"  Test Accuracy: {result['mean_test_accuracy']:.4f} ± {result['std_test_accuracy']:.4f}")
                     logger.info(f"  Test F1: {result['mean_test_f1']:.4f} ± {result['std_test_f1']:.4f}")
                 else:
-                    logger.error(f"✗ Failed to process noise type: train_noise_types={train_noise_types}, val_noise_types={val_noise_types}, test_noise_type={test_noise_type}")
+                    logger.error(f"✗ Failed to process noise type: train_noise_type={train_noise_type}, val_noise_type={val_noise_type}, test_noise_type={test_noise_type}")
             except Exception as e:
-                logger.error(f"✗ Error processing noise type train_noise_types={train_noise_types}, val_noise_types={val_noise_types}, test_noise_type={test_noise_type}: {str(e)}")
+                logger.error(f"✗ Error processing noise type train_noise_type={train_noise_type}, val_noise_type={val_noise_type}, test_noise_type={test_noise_type}: {str(e)}")
                 continue
         
         # 全結果のサマリーを表示

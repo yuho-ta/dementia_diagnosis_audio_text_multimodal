@@ -1,0 +1,14 @@
+2025-08-23 08:53:45,254 - INFO - Using device: cpu
+2025-08-23 08:53:45,254 - INFO - Starting noise combination experiment with subject-based splitting...
+2025-08-23 08:53:45,254 - INFO - Testing combinations of train and test noise types
+2025-08-23 08:53:45,254 - INFO - Ensuring no subject overlap between train and test sets
+2025-08-23 08:53:45,254 - INFO - Starting noise combination experiment...
+2025-08-23 08:53:45,254 - INFO - 
+============================================================
+2025-08-23 08:53:45,254 - INFO - Experiment: test_original_train_combined
+2025-08-23 08:53:45,254 - INFO - Train noise types: ['original', 'gaussian_noise_light']
+2025-08-23 08:53:45,254 - INFO - Test noise type: original
+2025-08-23 08:53:45,254 - INFO - ============================================================
+2025-08-23 08:53:45,254 - INFO - Starting cross-validation for noise combination (3-way split):
+2025-08-23 08:53:45,254 - INFO -   Train noise types: ['original', 'gaussian_noise_light']
+2025-08-23 08:53:45,254 - INFO -   Test noise type: original

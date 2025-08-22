@@ -517,15 +517,15 @@ def process_noise_combination_experiment(features_path, classification_config, c
     experiments = [
         {
             'name': 'test_original_train_combined',
-            'train_noise_types': ['original', 'gaussian_noise_light', 'gaussian_noise_medium'],
+            'train_noise_types': ['original', 'gaussian_noise_light'],
             'test_noise_type': 'original'
-        },
-        {
-            'name': 'test_noisy_train_combined',
-            'train_noise_types': ['original', 'gaussian_noise_light', 'gaussian_noise_medium'],
-            'test_noise_type': 'gaussian_noise_light'
         }
     ]
+    #  {
+    #     'name': 'test_noisy_train_combined',
+    #     'train_noise_types': ['original', 'gaussian_noise_light', 'gaussian_noise_medium'],
+    #     'test_noise_type': 'gaussian_noise_light'
+    # }
     
     all_results = {}
     

@@ -1,0 +1,2 @@
+experiment,train_noise_types,test_noise_type,mean_validation_accuracy,std_validation_accuracy,mean_test_accuracy,std_test_accuracy,mean_test_f1,std_test_f1
+test_original_train_combined,original_gaussian_noise_light,original,0.6844036697247706,0.01889106447887524,0.7034482758620689,0.031183126359196633,0.7089745736466937,0.029125322167665998

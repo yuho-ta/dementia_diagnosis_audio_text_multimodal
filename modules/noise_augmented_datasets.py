@@ -10,18 +10,95 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 import logging
+import json
 from noise_augmented_utils import extract_subject_id_from_filename, get_subject_id_from_cha_file
 
 # 診断カテゴリ
 diagnosis = ['ad', 'cn']
 label_mapping = {'ad': 1, 'cn': 0}
 
+class SubjectSplitter:
+    """被験者IDの分割を管理するクラス（再現性保証）"""
+    
+    def __init__(self, cache_file="subject_splits_common.json"):
+        self.cache_file = cache_file
+        # 再現性のためのseed固定
+        np.random.seed(42)
+    
+    def load_or_create_splits(self, subject_list, label_list):
+        """分割結果をキャッシュから読み込むか、新しく生成する"""
+        # キャッシュファイルが存在する場合は読み込む
+        if os.path.exists(self.cache_file):
+            try:
+                with open(self.cache_file, 'r') as f:
+                    cached_splits = json.load(f)
+                
+                # キャッシュされた被験者IDが現在のデータと一致するかチェック
+                cached_subjects = set(cached_splits['train'] + cached_splits['validation'] + cached_splits['test'])
+                current_subjects = set(subject_list)
+                
+                if cached_subjects == current_subjects:
+                    logging.info(f"Loading subject splits from cache: {self.cache_file}")
+                    return cached_splits['train'], cached_splits['validation'], cached_splits['test']
+                else:
+                    logging.warning(f"Cache mismatch. Regenerating splits. Cached: {len(cached_subjects)}, Current: {len(current_subjects)}")
+            except Exception as e:
+                logging.warning(f"Failed to load cache file: {e}")
+        
+        # 新しい分割を生成
+        logging.info("Generating new subject splits")
+        
+        # まず、train+validation と test に分割（80% vs 20%）
+        from sklearn.model_selection import StratifiedGroupKFold
+        sgkf_outer = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
+        train_val_subjects, test_subjects = next(sgkf_outer.split(subject_list, label_list, groups=subject_list))
+        
+        # 次に、train+validation を train と validation に分割（75% vs 25%）
+        train_val_subject_list = [subject_list[i] for i in train_val_subjects]
+        train_val_label_list = [label_list[i] for i in train_val_subjects]
+        
+        sgkf_inner = StratifiedGroupKFold(n_splits=4, shuffle=True, random_state=42)
+        train_subjects, val_subjects = next(sgkf_inner.split(train_val_subject_list, train_val_label_list, groups=train_val_subject_list))
+        
+        train_subject_ids = [train_val_subject_list[i] for i in train_subjects]
+        val_subject_ids = [train_val_subject_list[i] for i in val_subjects]
+        test_subject_ids = [subject_list[i] for i in test_subjects]
+        
+        # 分割結果をキャッシュに保存
+        splits_data = {
+            'train': train_subject_ids,
+            'validation': val_subject_ids,
+            'test': test_subject_ids,
+            'metadata': {
+                'total_subjects': len(subject_list),
+                'train_count': len(train_subject_ids),
+                'validation_count': len(val_subject_ids),
+                'test_count': len(test_subject_ids),
+                'random_state': 42
+            }
+        }
+        
+        try:
+            with open(self.cache_file, 'w') as f:
+                json.dump(splits_data, f, indent=2)
+            logging.info(f"Saved subject splits to cache: {self.cache_file}")
+        except Exception as e:
+            logging.warning(f"Failed to save cache file: {e}")
+        
+        return train_subject_ids, val_subject_ids, test_subject_ids
+
 class NoiseAugmentedDataset(Dataset):
     """ノイズ追加付き特徴量データセット（被験者IDベース3分割対応）"""
     
-    def __init__(self, features_path, noise_type='original', n_splits=5):
+    def __init__(self, features_path, train_noise_types='original', val_noise_types='original', test_noise_type='original', n_splits=5, splitter=None):
+        # 再現性のためのseed固定
+        np.random.seed(42)
+        
         self.features_path = features_path
-        self.noise_type = noise_type
+        self.train_noise_types = train_noise_types
+        self.val_noise_types = val_noise_types
+        self.test_noise_type = test_noise_type
+        self.splitter = splitter or SubjectSplitter()
         self.data = []
         self.labels = []
         self.subject_ids = []
@@ -39,25 +116,25 @@ class NoiseAugmentedDataset(Dataset):
                 
             label = label_mapping[diagno]
             
-            # 指定されたノイズタイプのファイルを取得
+            # すべてのノイズタイプのファイルを取得（後で分割時に適切なノイズタイプを選択）
             for file in os.listdir(diagno_path):
-                if file.endswith(f'_{noise_type}.pt'):
-                    file_path = os.path.join(diagno_path, file)
-                    # ファイル名からUIDを抽出
-                    uid = extract_subject_id_from_filename(file)
+            if file.endswith('.pt'):  # すべてのノイズタイプ
+                file_path = os.path.join(diagno_path, file)
+                # ファイル名からUIDを抽出
+                uid = extract_subject_id_from_filename(file)
+                
+                if uid:  # UIDが抽出できた場合のみ追加
+                    # CHAファイルから被験者IDを抽出
+                    subject_id = get_subject_id_from_cha_file(uid, diagno)
                     
-                    if uid:  # UIDが抽出できた場合のみ追加
-                        # CHAファイルから被験者IDを抽出
-                        subject_id = get_subject_id_from_cha_file(uid, diagno)
-                        
-                        if subject_id not in all_subject_files:
-                            all_subject_files[subject_id] = {}
-                            all_subject_labels[subject_id] = label
-                        
-                        if diagno not in all_subject_files[subject_id]:
-                            all_subject_files[subject_id][diagno] = []
-                        
-                        all_subject_files[subject_id][diagno].append(file_path)
+                    if subject_id not in all_subject_files:
+                        all_subject_files[subject_id] = {}
+                        all_subject_labels[subject_id] = label
+                    
+                    if diagno not in all_subject_files[subject_id]:
+                        all_subject_files[subject_id][diagno] = []
+                    
+                    all_subject_files[subject_id][diagno].append(file_path)
         
         # 被験者IDのリストを作成（診断カテゴリごとにグループ化）
         subject_ids_by_label = {}
@@ -66,10 +143,6 @@ class NoiseAugmentedDataset(Dataset):
                 subject_ids_by_label[label] = []
             subject_ids_by_label[label].append(subject_id)
         
-        # 被験者レベルで3分割（train: 60%, validation: 20%, test: 20%）
-        from sklearn.model_selection import StratifiedGroupKFold
-        import numpy as np
-        
         # 被験者IDとラベルのリストを作成
         subject_list = []
         label_list = []
@@ -77,63 +150,93 @@ class NoiseAugmentedDataset(Dataset):
             subject_list.extend(subjects)
             label_list.extend([label] * len(subjects))
         
-        # まず、train+validation と test に分割（80% vs 20%）
-        sgkf_outer = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
-        train_val_subjects, test_subjects = next(sgkf_outer.split(subject_list, label_list, groups=subject_list))
-        
-        # 次に、train+validation を train と validation に分割（75% vs 25%）
-        train_val_subject_list = [subject_list[i] for i in train_val_subjects]
-        train_val_label_list = [label_list[i] for i in train_val_subjects]
-        
-        sgkf_inner = StratifiedGroupKFold(n_splits=4, shuffle=True, random_state=42)
-        train_subjects, val_subjects = next(sgkf_inner.split(train_val_subject_list, train_val_label_list, groups=train_val_subject_list))
-        
-        train_subject_ids = [train_val_subject_list[i] for i in train_subjects]
-        val_subject_ids = [train_val_subject_list[i] for i in val_subjects]
-        test_subject_ids = [subject_list[i] for i in test_subjects]
+        # 共通の分割ロジックを使用
+        train_subject_ids, val_subject_ids, test_subject_ids = self.splitter.load_or_create_splits(
+            subject_list, label_list
+        )
         
         logging.info(f"Subject-level 3-way split: {len(train_subject_ids)} train, {len(val_subject_ids)} validation, {len(test_subject_ids)} test subjects")
         
-        # トレインデータを構築
+        # 分割結果をログに出力
+        logging.info(f"Train subjects: {sorted(train_subject_ids)}")
+        logging.info(f"Validation subjects: {sorted(val_subject_ids)}")
+        logging.info(f"Test subjects: {sorted(test_subject_ids)}")
+        
+        # トレインデータを構築（指定されたノイズタイプ）
         for subject_id in train_subject_ids:
             if subject_id in all_subject_files:
                 for diagno, file_paths in all_subject_files[subject_id].items():
                     label = all_subject_labels[subject_id]
                     
+                    # 指定されたノイズタイプのファイルのみを追加
                     for file_path in file_paths:
-                        self.data.append(file_path)
-                        self.labels.append(label)
-                        self.subject_ids.append(subject_id)
-                        self.data_types.append('train')
+                        file_name = os.path.basename(file_path)
+                        # train_noise_typesがリストの場合は複数のノイズタイプを許可
+                        if isinstance(self.train_noise_types, list):
+                            for noise_type in self.train_noise_types:
+                                if file_name.endswith(f'_{noise_type}.pt'):
+                                    self.data.append(file_path)
+                                    self.labels.append(label)
+                                    self.subject_ids.append(subject_id)
+                                    self.data_types.append('train')
+                                    break  # 1つのファイルが複数のノイズタイプにマッチしないように
+                        else:
+                            # 単一のノイズタイプの場合
+                            if file_name.endswith(f'_{self.train_noise_types}.pt'):
+                                self.data.append(file_path)
+                                self.labels.append(label)
+                                self.subject_ids.append(subject_id)
+                                self.data_types.append('train')
         
-        # バリデーションデータを構築
+        # バリデーションデータを構築（指定されたノイズタイプ）
         for subject_id in val_subject_ids:
             if subject_id in all_subject_files:
                 for diagno, file_paths in all_subject_files[subject_id].items():
                     label = all_subject_labels[subject_id]
                     
+                    # 指定されたノイズタイプのファイルのみを追加
                     for file_path in file_paths:
-                        self.data.append(file_path)
-                        self.labels.append(label)
-                        self.subject_ids.append(subject_id)
-                        self.data_types.append('validation')
+                        file_name = os.path.basename(file_path)
+                        # val_noise_typesがリストの場合は複数のノイズタイプを許可
+                        if isinstance(self.val_noise_types, list):
+                            for noise_type in self.val_noise_types:
+                                if file_name.endswith(f'_{noise_type}.pt'):
+                                    self.data.append(file_path)
+                                    self.labels.append(label)
+                                    self.subject_ids.append(subject_id)
+                                    self.data_types.append('validation')
+                                    break  # 1つのファイルが複数のノイズタイプにマッチしないように
+                        else:
+                            # 単一のノイズタイプの場合
+                            if file_name.endswith(f'_{self.val_noise_types}.pt'):
+                                self.data.append(file_path)
+                                self.labels.append(label)
+                                self.subject_ids.append(subject_id)
+                                self.data_types.append('validation')
         
-        # テストデータを構築
+        # テストデータを構築（指定されたノイズタイプ）
         for subject_id in test_subject_ids:
             if subject_id in all_subject_files:
                 for diagno, file_paths in all_subject_files[subject_id].items():
                     label = all_subject_labels[subject_id]
                     
+                    # 指定されたノイズタイプのファイルのみを追加
                     for file_path in file_paths:
-                        self.data.append(file_path)
-                        self.labels.append(label)
-                        self.subject_ids.append(subject_id)
-                        self.data_types.append('test')
+                        file_name = os.path.basename(file_path)
+                        if file_name.endswith(f'_{self.test_noise_type}.pt'):
+                            self.data.append(file_path)
+                            self.labels.append(label)
+                            self.subject_ids.append(subject_id)
+                            self.data_types.append('test')
         
         # クロスバリデーション用のインデックスを事前に生成（trainデータのみで分割）
         self._generate_cv_indices(n_splits)
         
-        logging.info(f"Loaded {len([d for d in self.data_types if d == 'train'])} train, {len([d for d in self.data_types if d == 'validation'])} validation, {len([d for d in self.data_types if d == 'test'])} test samples for noise type: {noise_type}")
+        # ノイズタイプの情報をログに出力
+        train_noise_str = str(self.train_noise_types) if isinstance(self.train_noise_types, list) else self.train_noise_types
+        val_noise_str = str(self.val_noise_types) if isinstance(self.val_noise_types, list) else self.val_noise_types
+        logging.info(f"Loaded {len([d for d in self.data_types if d == 'train'])} train, {len([d for d in self.data_types if d == 'validation'])} validation, {len([d for d in self.data_types if d == 'test'])} test samples")
+        logging.info(f"Train noise types: {train_noise_str}, Validation noise types: {val_noise_str}, Test noise type: {self.test_noise_type}")
         
         # クラス別サンプル数を計算
         train_class_counts = {}
@@ -184,6 +287,7 @@ class NoiseAugmentedDataset(Dataset):
         
         # 被験者IDベースのクロスバリデーション（trainデータのみで分割）
         from sklearn.model_selection import StratifiedGroupKFold
+        # 再現性のためのseed固定
         sgkf = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=42)
         
         self.fold_indices = []
@@ -222,10 +326,14 @@ class NoiseAugmentedDataset(Dataset):
 class CombinedNoiseDataset(Dataset):
     """ノイズあり・なしを組み合わせた特徴量データセット（被験者IDベース3分割対応）"""
     
-    def __init__(self, features_path, train_noise_types=['original', 'gaussian_noise_light'], test_noise_type='original', n_splits=5):
+    def __init__(self, features_path, train_noise_types=['original', 'gaussian_noise_light'], test_noise_type='original', n_splits=5, splitter=None):
+        # 再現性のためのseed固定
+        np.random.seed(42)
+        
         self.features_path = features_path
         self.train_noise_types = train_noise_types
         self.test_noise_type = test_noise_type
+        self.splitter = splitter or SubjectSplitter()
         self.data = []
         self.labels = []
         self.subject_ids = []
@@ -268,10 +376,6 @@ class CombinedNoiseDataset(Dataset):
                 subject_ids_by_label[label] = []
             subject_ids_by_label[label].append(subject_id)
         
-        # 被験者レベルで3分割（train: 60%, validation: 20%, test: 20%）
-        from sklearn.model_selection import StratifiedGroupKFold
-        import numpy as np
-        
         # 被験者IDとラベルのリストを作成
         subject_list = []
         label_list = []
@@ -279,22 +383,17 @@ class CombinedNoiseDataset(Dataset):
             subject_list.extend(subjects)
             label_list.extend([label] * len(subjects))
         
-        # まず、train+validation と test に分割（80% vs 20%）
-        sgkf_outer = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
-        train_val_subjects, test_subjects = next(sgkf_outer.split(subject_list, label_list, groups=subject_list))
-        
-        # 次に、train+validation を train と validation に分割（75% vs 25%）
-        train_val_subject_list = [subject_list[i] for i in train_val_subjects]
-        train_val_label_list = [label_list[i] for i in train_val_subjects]
-        
-        sgkf_inner = StratifiedGroupKFold(n_splits=4, shuffle=True, random_state=42)
-        train_subjects, val_subjects = next(sgkf_inner.split(train_val_subject_list, train_val_label_list, groups=train_val_subject_list))
-        
-        train_subject_ids = [train_val_subject_list[i] for i in train_subjects]
-        val_subject_ids = [train_val_subject_list[i] for i in val_subjects]
-        test_subject_ids = [subject_list[i] for i in test_subjects]
+        # 共通の分割ロジックを使用
+        train_subject_ids, val_subject_ids, test_subject_ids = self.splitter.load_or_create_splits(
+            subject_list, label_list
+        )
         
         logging.info(f"Subject-level 3-way split: {len(train_subject_ids)} train, {len(val_subject_ids)} validation, {len(test_subject_ids)} test subjects")
+        
+        # 分割結果をログに出力
+        logging.info(f"Train subjects: {sorted(train_subject_ids)}")
+        logging.info(f"Validation subjects: {sorted(val_subject_ids)}")
+        logging.info(f"Test subjects: {sorted(test_subject_ids)}")
         
         # トレインデータを構築（複数のノイズタイプ）
         for subject_id in train_subject_ids:
@@ -393,6 +492,7 @@ class CombinedNoiseDataset(Dataset):
         
         # 被験者IDベースのクロスバリデーション（trainデータのみで分割）
         from sklearn.model_selection import StratifiedGroupKFold
+        # 再現性のためのseed固定
         sgkf = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=42)
         
         self.fold_indices = []

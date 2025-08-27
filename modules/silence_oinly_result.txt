@@ -1,0 +1,524 @@
+### Fold 1
+Fold 1 train label distribution:
+  CN (0): 73 samples
+  AD (1): 152 samples
+  Total: 225 samples
+Fold 1 validation label distribution:
+  CN (0): 19 samples
+  AD (1): 38 samples
+  Total: 57 samples
+Overall dataset distribution:
+  CN (0): 92 samples
+  AD (1): 190 samples
+  Total: 282 samples
+Class distribution: Class 0 (CN): 73, Class 1 (AD): 152
+Calculated weights: Class 0: 1.5411, Class 1: 0.7401
+pos_weight for BCEWithLogitsLoss: 0.4803
+Fold 1 pos_weight: 0.4803
+Epoch 1/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [03:10<00:00,  6.57s/it, loss=0.3236]
+Epoch 1: Train Loss: 0.4453, Val Loss: 0.4777, Val Accuracy: 0.5088
+  Precision: 0.6471, Recall: 0.5789, F1: 0.6111, AUC: 0.5568
+Epoch 2/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [03:00<00:00,  6.21s/it, loss=0.7070] 
+Epoch 2: Train Loss: 0.4550, Val Loss: 0.4767, Val Accuracy: 0.6491
+  Precision: 0.6667, Recall: 0.9474, F1: 0.7826, AUC: 0.6205
+Epoch 3/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [03:11<00:00,  6.60s/it, loss=0.3005] 
+Epoch 3: Train Loss: 0.4404, Val Loss: 0.4748, Val Accuracy: 0.6316
+  Precision: 0.6735, Recall: 0.8684, F1: 0.7586, AUC: 0.6260
+Epoch 4/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [03:00<00:00,  6.22s/it, loss=0.3317] 
+Epoch 4: Train Loss: 0.4393, Val Loss: 0.4707, Val Accuracy: 0.5789
+  Precision: 0.6842, Recall: 0.6842, F1: 0.6842, AUC: 0.6330
+Epoch 5/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [02:59<00:00,  6.17s/it, loss=0.3371] 
+Epoch 5: Train Loss: 0.4347, Val Loss: 0.4720, Val Accuracy: 0.5965
+  Precision: 0.6596, Recall: 0.8158, F1: 0.7294, AUC: 0.6385
+Epoch 6/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [03:00<00:00,  6.21s/it, loss=0.6581] 
+Epoch 6: Train Loss: 0.4415, Val Loss: 0.4690, Val Accuracy: 0.6140
+  Precision: 0.7000, Recall: 0.7368, F1: 0.7179, AUC: 0.6399
+Epoch 7/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [02:59<00:00,  6.19s/it, loss=0.3386] 
+Epoch 7: Train Loss: 0.4282, Val Loss: 0.4652, Val Accuracy: 0.5965
+  Precision: 0.7027, Recall: 0.6842, F1: 0.6933, AUC: 0.6399
+Epoch 8/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [02:59<00:00,  6.20s/it, loss=0.3297] 
+Epoch 8: Train Loss: 0.4265, Val Loss: 0.4623, Val Accuracy: 0.6316
+  Precision: 0.7742, Recall: 0.6316, F1: 0.6957, AUC: 0.6399
+Epoch 9/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [03:02<00:00,  6.31s/it, loss=0.3495] 
+Epoch 9: Train Loss: 0.4256, Val Loss: 0.4616, Val Accuracy: 0.6491
+  Precision: 0.7812, Recall: 0.6579, F1: 0.7143, AUC: 0.6385
+Epoch 10/10: 100%|██████████████████████████████████████████████████████████████████████████████| 29/29 [03:00<00:00,  6.21s/it, loss=0.3092] 
+Epoch 10: Train Loss: 0.4209, Val Loss: 0.4612, Val Accuracy: 0.6491
+  Precision: 0.7812, Recall: 0.6579, F1: 0.7143, AUC: 0.6399
+Fold 1 completed. Best F1-score: 0.7826
+
+### Fold 2
+Fold 2 train label distribution:
+  CN (0): 73 samples
+  AD (1): 152 samples
+  Total: 225 samples
+Fold 2 validation label distribution:
+  CN (0): 19 samples
+  AD (1): 38 samples
+  Total: 57 samples
+Overall dataset distribution:
+  CN (0): 92 samples
+  AD (1): 190 samples
+  Total: 282 samples
+Class distribution: Class 0 (CN): 73, Class 1 (AD): 152
+Calculated weights: Class 0: 1.5411, Class 1: 0.7401
+pos_weight for BCEWithLogitsLoss: 0.4803
+Fold 2 pos_weight: 0.4803
+Epoch 1/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [03:04<00:00,  6.35s/it, loss=0.3055]
+Epoch 1: Train Loss: 0.4455, Val Loss: 0.4859, Val Accuracy: 0.6667
+  Precision: 0.6667, Recall: 1.0000, F1: 0.8000, AUC: 0.5720
+Epoch 2/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:11<00:00,  8.66s/it, loss=0.6772] 
+Epoch 2: Train Loss: 0.4549, Val Loss: 0.4771, Val Accuracy: 0.5263
+  Precision: 0.7200, Recall: 0.4737, F1: 0.5714, AUC: 0.6066
+Epoch 3/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:28<00:00,  9.27s/it, loss=0.6647] 
+Epoch 3: Train Loss: 0.4505, Val Loss: 0.4767, Val Accuracy: 0.6842
+  Precision: 0.7174, Recall: 0.8684, F1: 0.7857, AUC: 0.6302
+Epoch 4/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:37<00:00,  9.56s/it, loss=0.6992] 
+Epoch 4: Train Loss: 0.4469, Val Loss: 0.4773, Val Accuracy: 0.6316
+  Precision: 0.6667, Recall: 0.8947, F1: 0.7640, AUC: 0.6413
+Epoch 5/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:30<00:00,  9.34s/it, loss=0.3403] 
+Epoch 5: Train Loss: 0.4331, Val Loss: 0.4723, Val Accuracy: 0.7193
+  Precision: 0.7619, Recall: 0.8421, F1: 0.8000, AUC: 0.6440
+Epoch 6/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:30<00:00,  9.33s/it, loss=0.2396] 
+Epoch 6: Train Loss: 0.4264, Val Loss: 0.4720, Val Accuracy: 0.6842
+  Precision: 0.7273, Recall: 0.8421, F1: 0.7805, AUC: 0.6440
+Epoch 7/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:28<00:00,  9.25s/it, loss=0.3563] 
+Epoch 7: Train Loss: 0.4269, Val Loss: 0.4701, Val Accuracy: 0.6842
+  Precision: 0.7381, Recall: 0.8158, F1: 0.7750, AUC: 0.6496
+Epoch 8/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:38<00:00,  9.60s/it, loss=0.2968] 
+Epoch 8: Train Loss: 0.4241, Val Loss: 0.4672, Val Accuracy: 0.5965
+  Precision: 0.7273, Recall: 0.6316, F1: 0.6761, AUC: 0.6510
+Epoch 9/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:40<00:00,  9.69s/it, loss=0.6996] 
+Epoch 9: Train Loss: 0.4346, Val Loss: 0.4671, Val Accuracy: 0.6316
+  Precision: 0.7429, Recall: 0.6842, F1: 0.7123, AUC: 0.6524
+Epoch 10/10: 100%|██████████████████████████████████████████████████████████████████████████████| 29/29 [04:36<00:00,  9.55s/it, loss=0.7037] 
+Epoch 10: Train Loss: 0.4322, Val Loss: 0.4672, Val Accuracy: 0.6491
+  Precision: 0.7500, Recall: 0.7105, F1: 0.7297, AUC: 0.6510
+Fold 2 completed. Best F1-score: 0.8000
+
+### Fold 3
+Fold 3 train label distribution:
+  CN (0): 74 samples
+  AD (1): 152 samples
+  Total: 226 samples
+Fold 3 validation label distribution:
+  CN (0): 18 samples
+  AD (1): 38 samples
+  Total: 56 samples
+Overall dataset distribution:
+  CN (0): 92 samples
+  AD (1): 190 samples
+  Total: 282 samples
+Class distribution: Class 0 (CN): 74, Class 1 (AD): 152
+Calculated weights: Class 0: 1.5270, Class 1: 0.7434
+pos_weight for BCEWithLogitsLoss: 0.4868
+Fold 3 pos_weight: 0.4868
+Epoch 1/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:30<00:00,  9.33s/it, loss=0.5407]
+Epoch 1: Train Loss: 0.4556, Val Loss: 0.4480, Val Accuracy: 0.6786
+  Precision: 0.6786, Recall: 1.0000, F1: 0.8085, AUC: 0.7339
+Epoch 2/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:38<00:00,  9.60s/it, loss=0.5088] 
+Epoch 2: Train Loss: 0.4522, Val Loss: 0.4452, Val Accuracy: 0.6786
+  Precision: 0.6786, Recall: 1.0000, F1: 0.8085, AUC: 0.7412
+Epoch 3/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:34<00:00,  9.45s/it, loss=0.3336] 
+Epoch 3: Train Loss: 0.4457, Val Loss: 0.4437, Val Accuracy: 0.6071
+  Precision: 0.9000, Recall: 0.4737, F1: 0.6207, AUC: 0.7456
+Epoch 4/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:49<00:00,  9.99s/it, loss=0.2980] 
+Epoch 4: Train Loss: 0.4417, Val Loss: 0.4402, Val Accuracy: 0.6607
+  Precision: 0.9130, Recall: 0.5526, F1: 0.6885, AUC: 0.7471
+Epoch 5/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:28<00:00,  9.26s/it, loss=0.5218] 
+Epoch 5: Train Loss: 0.4444, Val Loss: 0.4363, Val Accuracy: 0.6964
+  Precision: 0.7838, Recall: 0.7632, F1: 0.7733, AUC: 0.7456
+Epoch 6/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:32<00:00,  9.40s/it, loss=0.3241]
+Epoch 6: Train Loss: 0.4365, Val Loss: 0.4335, Val Accuracy: 0.6964
+  Precision: 0.7692, Recall: 0.7895, F1: 0.7792, AUC: 0.7412
+Epoch 7/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:37<00:00,  9.56s/it, loss=0.3390] 
+Epoch 7: Train Loss: 0.4356, Val Loss: 0.4313, Val Accuracy: 0.6786
+  Precision: 0.7500, Recall: 0.7895, F1: 0.7692, AUC: 0.7427
+Epoch 8/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:32<00:00,  9.41s/it, loss=0.3172]
+Epoch 8: Train Loss: 0.4340, Val Loss: 0.4302, Val Accuracy: 0.7143
+  Precision: 0.8438, Recall: 0.7105, F1: 0.7714, AUC: 0.7442
+Epoch 9/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:32<00:00,  9.39s/it, loss=0.4957] 
+Epoch 9: Train Loss: 0.4367, Val Loss: 0.4292, Val Accuracy: 0.6964
+  Precision: 0.8387, Recall: 0.6842, F1: 0.7536, AUC: 0.7456
+Epoch 10/10: 100%|██████████████████████████████████████████████████████████████████████████████| 29/29 [04:39<00:00,  9.63s/it, loss=0.7007]
+Epoch 10: Train Loss: 0.4402, Val Loss: 0.4285, Val Accuracy: 0.7321
+  Precision: 0.8485, Recall: 0.7368, F1: 0.7887, AUC: 0.7442
+Fold 3 completed. Best F1-score: 0.8085
+
+### Fold 4
+Fold 4 train label distribution:
+  CN (0): 74 samples
+  AD (1): 152 samples
+  Total: 226 samples
+Fold 4 validation label distribution:
+  CN (0): 18 samples
+  AD (1): 38 samples
+  Total: 56 samples
+Overall dataset distribution:
+  CN (0): 92 samples
+  AD (1): 190 samples
+  Total: 282 samples
+Class distribution: Class 0 (CN): 74, Class 1 (AD): 152
+Calculated weights: Class 0: 1.5270, Class 1: 0.7434
+pos_weight for BCEWithLogitsLoss: 0.4868
+Fold 4 pos_weight: 0.4868
+Epoch 1/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:35<00:00,  9.50s/it, loss=0.5141]
+Epoch 1: Train Loss: 0.4566, Val Loss: 0.4504, Val Accuracy: 0.3393
+  Precision: 1.0000, Recall: 0.0263, F1: 0.0513, AUC: 0.7719
+Epoch 2/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:30<00:00,  9.33s/it, loss=0.5038] 
+Epoch 2: Train Loss: 0.4536, Val Loss: 0.4473, Val Accuracy: 0.7143
+  Precision: 0.7619, Recall: 0.8421, F1: 0.8000, AUC: 0.7807
+Epoch 3/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:35<00:00,  9.50s/it, loss=0.3164] 
+Epoch 3: Train Loss: 0.4478, Val Loss: 0.4442, Val Accuracy: 0.7321
+  Precision: 0.7447, Recall: 0.9211, F1: 0.8235, AUC: 0.7661
+Epoch 4/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:35<00:00,  9.49s/it, loss=0.5320]
+Epoch 4: Train Loss: 0.4507, Val Loss: 0.4419, Val Accuracy: 0.7143
+  Precision: 0.7037, Recall: 1.0000, F1: 0.8261, AUC: 0.7646
+Epoch 5/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:31<00:00,  9.38s/it, loss=0.3274]
+Epoch 5: Train Loss: 0.4433, Val Loss: 0.4394, Val Accuracy: 0.7321
+  Precision: 0.7255, Recall: 0.9737, F1: 0.8315, AUC: 0.7632
+Epoch 6/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:57<00:00, 10.27s/it, loss=0.5841] 
+Epoch 6: Train Loss: 0.4492, Val Loss: 0.4371, Val Accuracy: 0.7321
+  Precision: 0.7170, Recall: 1.0000, F1: 0.8352, AUC: 0.7588
+Epoch 7/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:43<00:00,  9.77s/it, loss=0.5024] 
+Epoch 7: Train Loss: 0.4447, Val Loss: 0.4350, Val Accuracy: 0.6964
+  Precision: 0.7561, Recall: 0.8158, F1: 0.7848, AUC: 0.7588
+Epoch 8/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:39<00:00,  9.63s/it, loss=0.5103] 
+Epoch 8: Train Loss: 0.4422, Val Loss: 0.4334, Val Accuracy: 0.6786
+  Precision: 0.7500, Recall: 0.7895, F1: 0.7692, AUC: 0.7602
+Epoch 9/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:36<00:00,  9.53s/it, loss=0.2904]
+Epoch 9: Train Loss: 0.4348, Val Loss: 0.4324, Val Accuracy: 0.6786
+  Precision: 0.7500, Recall: 0.7895, F1: 0.7692, AUC: 0.7588
+Epoch 10/10: 100%|██████████████████████████████████████████████████████████████████████████████| 29/29 [04:41<00:00,  9.70s/it, loss=0.5063] 
+Epoch 10: Train Loss: 0.4404, Val Loss: 0.4319, Val Accuracy: 0.6964
+  Precision: 0.7561, Recall: 0.8158, F1: 0.7848, AUC: 0.7588
+Fold 4 completed. Best F1-score: 0.8352
+
+### Fold 5
+Fold 5 train label distribution:
+  CN (0): 74 samples
+  AD (1): 152 samples
+  Total: 226 samples
+Fold 5 validation label distribution:
+  CN (0): 18 samples
+  AD (1): 38 samples
+  Total: 56 samples
+Overall dataset distribution:
+  CN (0): 92 samples
+  AD (1): 190 samples
+  Total: 282 samples
+Class distribution: Class 0 (CN): 74, Class 1 (AD): 152
+Calculated weights: Class 0: 1.5270, Class 1: 0.7434
+pos_weight for BCEWithLogitsLoss: 0.4868
+Fold 5 pos_weight: 0.4868
+Epoch 1/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:46<00:00,  9.88s/it, loss=0.3193]
+Epoch 1: Train Loss: 0.4509, Val Loss: 0.4507, Val Accuracy: 0.6786
+  Precision: 0.6786, Recall: 1.0000, F1: 0.8085, AUC: 0.6535
+Epoch 2/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:39<00:00,  9.63s/it, loss=0.3191] 
+Epoch 2: Train Loss: 0.4489, Val Loss: 0.4491, Val Accuracy: 0.6786
+  Precision: 0.6786, Recall: 1.0000, F1: 0.8085, AUC: 0.6667
+Epoch 3/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:46<00:00,  9.87s/it, loss=0.6976]
+Epoch 3: Train Loss: 0.4567, Val Loss: 0.4475, Val Accuracy: 0.6607
+  Precision: 0.8065, Recall: 0.6579, F1: 0.7246, AUC: 0.6740
+Epoch 4/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:26<00:00,  9.20s/it, loss=0.3259]
+Epoch 4: Train Loss: 0.4426, Val Loss: 0.4453, Val Accuracy: 0.6250
+  Precision: 0.7073, Recall: 0.7632, F1: 0.7342, AUC: 0.6784
+Epoch 5/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:29<00:00,  9.30s/it, loss=0.4884] 
+Epoch 5: Train Loss: 0.4441, Val Loss: 0.4436, Val Accuracy: 0.7321
+  Precision: 0.7255, Recall: 0.9737, F1: 0.8315, AUC: 0.6827
+Epoch 6/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:36<00:00,  9.52s/it, loss=0.3032] 
+Epoch 6: Train Loss: 0.4390, Val Loss: 0.4419, Val Accuracy: 0.6964
+  Precision: 0.8000, Recall: 0.7368, F1: 0.7671, AUC: 0.6754
+Epoch 7/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:29<00:00,  9.30s/it, loss=0.4442] 
+Epoch 7: Train Loss: 0.4385, Val Loss: 0.4403, Val Accuracy: 0.6786
+  Precision: 0.8125, Recall: 0.6842, F1: 0.7429, AUC: 0.6754
+Epoch 8/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:37<00:00,  9.56s/it, loss=0.5490] 
+Epoch 8: Train Loss: 0.4391, Val Loss: 0.4390, Val Accuracy: 0.6786
+  Precision: 0.8125, Recall: 0.6842, F1: 0.7429, AUC: 0.6740
+Epoch 9/10: 100%|███████████████████████████████████████████████████████████████████████████████| 29/29 [04:37<00:00,  9.56s/it, loss=0.3272] 
+Epoch 9: Train Loss: 0.4317, Val Loss: 0.4382, Val Accuracy: 0.6786
+  Precision: 0.8125, Recall: 0.6842, F1: 0.7429, AUC: 0.6740
+Epoch 10/10: 100%|██████████████████████████████████████████████████████████████████████████████| 29/29 [04:39<00:00,  9.65s/it, loss=0.5655] 
+Epoch 10: Train Loss: 0.4364, Val Loss: 0.4378, Val Accuracy: 0.6786
+  Precision: 0.8125, Recall: 0.6842, F1: 0.7429, AUC: 0.6740
+Fold 5 completed. Best F1-score: 0.8315
+
+=== AD Sample Usage Across All Folds ===
+Fold 1: 190 AD samples
+Fold 2: 190 AD samples
+Fold 3: 190 AD samples
+Fold 4: 190 AD samples
+Fold 5: 190 AD samples
+Total unique AD samples used across all folds: 190
+Total AD samples in dataset: 190
+All AD samples used: Yes
+
+=== Final Results ===
+   fold   best_f1  final_val_accuracy  final_val_f1  final_val_precision  final_val_recall  final_val_auc_roc  final_val_loss
+0     1  0.782609            0.649123             0                    0                 0                  0        0.461193
+1     2  0.800000            0.649123             0                    0                 0                  0        0.467233
+2     3  0.808511            0.732143             0                    0                 0                  0        0.428542
+3     4  0.835165            0.696429             0                    0                 0                  0        0.431886
+4     5  0.831461            0.678571             0                    0                 0                  0        0.437764
+
+Mean F1-score across folds: 0.8115 ± 0.0220
+Mean accuracy across folds: 0.6811 ± 0.0350
+wandb:
+wandb: 
+wandb: Run history:
+wandb:                 dataset/ad_ratio ▁
+wandb:               dataset/ad_samples ▁
+wandb:                 dataset/cn_ratio ▁
+wandb:               dataset/cn_samples ▁
+wandb:            dataset/total_samples ▁
+wandb:              final/mean_accuracy ▁
+wandb:                    final/mean_f1 ▁
+wandb:               final/std_accuracy ▁
+wandb:                     final/std_f1 ▁
+wandb:                   fold_1/best_f1 ▁
+wandb:        fold_1/final_val_accuracy ▁
+wandb:            fold_1/final_val_loss ▁
+wandb:                fold_1/pos_weight ▁
+wandb:                  fold_1/train_ad ▁
+wandb:            fold_1/train_ad_ratio ▁
+wandb:                  fold_1/train_cn ▁
+wandb:            fold_1/train_cn_ratio ▁
+wandb:               fold_1/train_total ▁
+wandb:                    fold_1/val_ad ▁
+wandb:              fold_1/val_ad_ratio ▁
+wandb:                    fold_1/val_cn ▁
+wandb:              fold_1/val_cn_ratio ▁
+wandb:                 fold_1/val_total ▁
+wandb:         fold_1_transformer/epoch ▁▂▃▃▄▅▆▆▇█
+wandb: fold_1_transformer/learning_rate █▇▆▆▅▄▃▃▂▁
+wandb:    fold_1_transformer/train_loss ▆█▅▅▄▅▂▂▂▁
+wandb:  fold_1_transformer/val_accuracy ▁█▇▄▅▆▅▇██
+wandb:   fold_1_transformer/val_auc_roc ▁▆▇▇██████
+wandb:        fold_1_transformer/val_f1 ▁█▇▄▆▅▄▄▅▅
+wandb:      fold_1_transformer/val_loss ██▇▅▆▄▃▁▁▁
+wandb: fold_1_transformer/val_precision ▁▂▂▃▂▄▄███
+wandb:    fold_1_transformer/val_recall ▁█▇▃▅▄▃▂▂▂
+wandb:                   fold_2/best_f1 ▁
+wandb:        fold_2/final_val_accuracy ▁
+wandb:            fold_2/final_val_loss ▁
+wandb:                fold_2/pos_weight ▁
+wandb:                  fold_2/train_ad ▁
+wandb:            fold_2/train_ad_ratio ▁
+wandb:                  fold_2/train_cn ▁
+wandb:            fold_2/train_cn_ratio ▁
+wandb:               fold_2/train_total ▁
+wandb:                    fold_2/val_ad ▁
+wandb:              fold_2/val_ad_ratio ▁
+wandb:                    fold_2/val_cn ▁
+wandb:              fold_2/val_cn_ratio ▁
+wandb:                 fold_2/val_total ▁
+wandb:         fold_2_transformer/epoch ▁▂▃▃▄▅▆▆▇█
+wandb: fold_2_transformer/learning_rate █▇▆▆▅▄▃▃▂▁
+wandb:    fold_2_transformer/train_loss ▆█▇▆▃▂▂▁▃▃
+wandb:  fold_2_transformer/val_accuracy ▆▁▇▅█▇▇▄▅▅
+wandb:   fold_2_transformer/val_auc_roc ▁▄▆▇▇▇████
+wandb:        fold_2_transformer/val_f1 █▁█▇█▇▇▄▅▆
+wandb:      fold_2_transformer/val_loss █▅▅▅▃▃▂▁▁▁
+wandb: fold_2_transformer/val_precision ▁▅▅▁█▅▆▅▇▇
+wandb:    fold_2_transformer/val_recall █▁▆▇▆▆▆▃▄▄
+wandb:                   fold_3/best_f1 ▁
+wandb:        fold_3/final_val_accuracy ▁
+wandb:            fold_3/final_val_loss ▁
+wandb:                fold_3/pos_weight ▁
+wandb:                  fold_3/train_ad ▁
+wandb:            fold_3/train_ad_ratio ▁
+wandb:                  fold_3/train_cn ▁
+wandb:            fold_3/train_cn_ratio ▁
+wandb:               fold_3/train_total ▁
+wandb:                    fold_3/val_ad ▁
+wandb:              fold_3/val_ad_ratio ▁
+wandb:                    fold_3/val_cn ▁
+wandb:              fold_3/val_cn_ratio ▁
+wandb:                 fold_3/val_total ▁
+wandb:         fold_3_transformer/epoch ▁▂▃▃▄▅▆▆▇█
+wandb: fold_3_transformer/learning_rate █▇▆▆▅▄▃▃▂▁
+wandb:    fold_3_transformer/train_loss █▇▅▃▄▂▂▁▂▃
+wandb:  fold_3_transformer/val_accuracy ▅▅▁▄▆▆▅▇▆█
+wandb:   fold_3_transformer/val_auc_roc ▁▅▇█▇▅▆▆▇▆
+wandb:        fold_3_transformer/val_f1 ██▁▄▇▇▇▇▆▇
+wandb:      fold_3_transformer/val_loss █▇▆▅▄▃▂▂▁▁
+wandb: fold_3_transformer/val_precision ▁▁██▄▄▃▆▆▆
+wandb:    fold_3_transformer/val_recall ██▁▂▅▅▅▄▄▄
+wandb:                   fold_4/best_f1 ▁
+wandb:        fold_4/final_val_accuracy ▁
+wandb:            fold_4/final_val_loss ▁
+wandb:                fold_4/pos_weight ▁
+wandb:                  fold_4/train_ad ▁
+wandb:            fold_4/train_ad_ratio ▁
+wandb:                  fold_4/train_cn ▁
+wandb:            fold_4/train_cn_ratio ▁
+wandb:               fold_4/train_total ▁
+wandb:                    fold_4/val_ad ▁
+wandb:              fold_4/val_ad_ratio ▁
+wandb:                    fold_4/val_cn ▁
+wandb:              fold_4/val_cn_ratio ▁
+wandb:                 fold_4/val_total ▁
+wandb:         fold_4_transformer/epoch ▁▂▃▃▄▅▆▆▇█
+wandb: fold_4_transformer/learning_rate █▇▆▆▅▄▃▃▂▁
+wandb:    fold_4_transformer/train_loss █▇▅▆▄▆▄▃▁▃
+wandb:  fold_4_transformer/val_accuracy ▁█████▇▇▇▇
+wandb:   fold_4_transformer/val_auc_roc ▅█▃▃▂▁▁▁▁▁
+wandb:        fold_4_transformer/val_f1 ▁██████▇▇█
+wandb:      fold_4_transformer/val_loss █▇▆▅▄▃▂▂▁▁
+wandb: fold_4_transformer/val_precision █▂▂▁▂▁▂▂▂▂
+wandb:    fold_4_transformer/val_recall ▁▇▇███▇▆▆▇
+wandb:                   fold_5/best_f1 ▁
+wandb:        fold_5/final_val_accuracy ▁
+wandb:            fold_5/final_val_loss ▁
+wandb:                fold_5/pos_weight ▁
+wandb:                  fold_5/train_ad ▁
+wandb:            fold_5/train_ad_ratio ▁
+wandb:                  fold_5/train_cn ▁
+wandb:            fold_5/train_cn_ratio ▁
+wandb:               fold_5/train_total ▁
+wandb:                    fold_5/val_ad ▁
+wandb:              fold_5/val_ad_ratio ▁
+wandb:                    fold_5/val_cn ▁
+wandb:              fold_5/val_cn_ratio ▁
+wandb:                 fold_5/val_total ▁
+wandb:         fold_5_transformer/epoch ▁▂▃▃▄▅▆▆▇█
+wandb: fold_5_transformer/learning_rate █▇▆▆▅▄▃▃▂▁
+wandb:    fold_5_transformer/train_loss ▆▆█▄▄▃▃▃▁▂
+wandb:  fold_5_transformer/val_accuracy ▄▄▃▁█▆▄▄▄▄
+wandb:   fold_5_transformer/val_auc_roc ▁▄▆▇█▆▆▆▆▆
+wandb:        fold_5_transformer/val_f1 ▆▆▁▂█▄▂▂▂▂
+wandb:      fold_5_transformer/val_loss █▇▆▅▄▃▂▂▁▁
+wandb: fold_5_transformer/val_precision ▁▁█▃▃▇████
+wandb:    fold_5_transformer/val_recall ██▁▃▇▃▂▂▂▂
+wandb:
+wandb: Run summary:
+wandb:                 dataset/ad_ratio 0.67376
+wandb:               dataset/ad_samples 190
+wandb:                 dataset/cn_ratio 0.32624
+wandb:               dataset/cn_samples 92
+wandb:            dataset/total_samples 282
+wandb:              final/mean_accuracy 0.68108
+wandb:                    final/mean_f1 0.81155
+wandb:               final/std_accuracy 0.03497
+wandb:                     final/std_f1 0.02199
+wandb:                   fold_1/best_f1 0.78261
+wandb:        fold_1/final_val_accuracy 0.64912
+wandb:            fold_1/final_val_loss 0.46119
+wandb:                fold_1/pos_weight 0.48026
+wandb:                  fold_1/train_ad 152
+wandb:            fold_1/train_ad_ratio 0.67556
+wandb:                  fold_1/train_cn 73
+wandb:            fold_1/train_cn_ratio 0.32444
+wandb:               fold_1/train_total 225
+wandb:                    fold_1/val_ad 38
+wandb:              fold_1/val_ad_ratio 0.66667
+wandb:                    fold_1/val_cn 19
+wandb:              fold_1/val_cn_ratio 0.33333
+wandb:                 fold_1/val_total 57
+wandb:         fold_1_transformer/epoch 10
+wandb: fold_1_transformer/learning_rate 0.0
+wandb:    fold_1_transformer/train_loss 0.42093
+wandb:  fold_1_transformer/val_accuracy 0.64912
+wandb:   fold_1_transformer/val_auc_roc 0.63989
+wandb:        fold_1_transformer/val_f1 0.71429
+wandb:      fold_1_transformer/val_loss 0.46119
+wandb: fold_1_transformer/val_precision 0.78125
+wandb:    fold_1_transformer/val_recall 0.65789
+wandb:                   fold_2/best_f1 0.8
+wandb:        fold_2/final_val_accuracy 0.64912
+wandb:            fold_2/final_val_loss 0.46723
+wandb:                fold_2/pos_weight 0.48026
+wandb:                  fold_2/train_ad 152
+wandb:            fold_2/train_ad_ratio 0.67556
+wandb:                  fold_2/train_cn 73
+wandb:            fold_2/train_cn_ratio 0.32444
+wandb:               fold_2/train_total 225
+wandb:                    fold_2/val_ad 38
+wandb:              fold_2/val_ad_ratio 0.66667
+wandb:                    fold_2/val_cn 19
+wandb:              fold_2/val_cn_ratio 0.33333
+wandb:                 fold_2/val_total 57
+wandb:         fold_2_transformer/epoch 10
+wandb: fold_2_transformer/learning_rate 0.0
+wandb:    fold_2_transformer/train_loss 0.43221
+wandb:  fold_2_transformer/val_accuracy 0.64912
+wandb:   fold_2_transformer/val_auc_roc 0.65097
+wandb:        fold_2_transformer/val_f1 0.72973
+wandb:      fold_2_transformer/val_loss 0.46723
+wandb: fold_2_transformer/val_precision 0.75
+wandb:    fold_2_transformer/val_recall 0.71053
+wandb:                   fold_3/best_f1 0.80851
+wandb:        fold_3/final_val_accuracy 0.73214
+wandb:            fold_3/final_val_loss 0.42854
+wandb:                fold_3/pos_weight 0.48684
+wandb:                  fold_3/train_ad 152
+wandb:            fold_3/train_ad_ratio 0.67257
+wandb:                  fold_3/train_cn 74
+wandb:            fold_3/train_cn_ratio 0.32743
+wandb:               fold_3/train_total 226
+wandb:                    fold_3/val_ad 38
+wandb:              fold_3/val_ad_ratio 0.67857
+wandb:                    fold_3/val_cn 18
+wandb:              fold_3/val_cn_ratio 0.32143
+wandb:                 fold_3/val_total 56
+wandb:         fold_3_transformer/epoch 10
+wandb: fold_3_transformer/learning_rate 0.0
+wandb:    fold_3_transformer/train_loss 0.44018
+wandb:  fold_3_transformer/val_accuracy 0.73214
+wandb:   fold_3_transformer/val_auc_roc 0.74415
+wandb:        fold_3_transformer/val_f1 0.78873
+wandb:      fold_3_transformer/val_loss 0.42854
+wandb: fold_3_transformer/val_precision 0.84848
+wandb:    fold_3_transformer/val_recall 0.73684
+wandb:                   fold_4/best_f1 0.83516
+wandb:        fold_4/final_val_accuracy 0.69643
+wandb:            fold_4/final_val_loss 0.43189
+wandb:                fold_4/pos_weight 0.48684
+wandb:                  fold_4/train_ad 152
+wandb:            fold_4/train_ad_ratio 0.67257
+wandb:                  fold_4/train_cn 74
+wandb:            fold_4/train_cn_ratio 0.32743
+wandb:               fold_4/train_total 226
+wandb:                    fold_4/val_ad 38
+wandb:              fold_4/val_ad_ratio 0.67857
+wandb:                    fold_4/val_cn 18
+wandb:              fold_4/val_cn_ratio 0.32143
+wandb:                 fold_4/val_total 56
+wandb:         fold_4_transformer/epoch 10
+wandb: fold_4_transformer/learning_rate 0.0
+wandb:    fold_4_transformer/train_loss 0.44036
+wandb:  fold_4_transformer/val_accuracy 0.69643
+wandb:   fold_4_transformer/val_auc_roc 0.75877
+wandb:        fold_4_transformer/val_f1 0.78481
+wandb:      fold_4_transformer/val_loss 0.43189
+wandb: fold_4_transformer/val_precision 0.7561
+wandb:    fold_4_transformer/val_recall 0.81579
+wandb:                   fold_5/best_f1 0.83146
+wandb:        fold_5/final_val_accuracy 0.67857
+wandb:            fold_5/final_val_loss 0.43776
+wandb:                fold_5/pos_weight 0.48684
+wandb:                  fold_5/train_ad 152
+wandb:            fold_5/train_ad_ratio 0.67257
+wandb:                  fold_5/train_cn 74
+wandb:            fold_5/train_cn_ratio 0.32743
+wandb:               fold_5/train_total 226
+wandb:                    fold_5/val_ad 38
+wandb:              fold_5/val_ad_ratio 0.67857
+wandb:                    fold_5/val_cn 18
+wandb:              fold_5/val_cn_ratio 0.32143
+wandb:                 fold_5/val_total 56
+wandb:         fold_5_transformer/epoch 10
+wandb: fold_5_transformer/learning_rate 0.0
+wandb:    fold_5_transformer/train_loss 0.43637
+wandb:  fold_5_transformer/val_accuracy 0.67857
+wandb:   fold_5_transformer/val_auc_roc 0.67398
+wandb:        fold_5_transformer/val_f1 0.74286
+wandb:      fold_5_transformer/val_loss 0.43776
+wandb: fold_5_transformer/val_precision 0.8125
+wandb:    fold_5_transformer/val_recall 0.68421
+wandb:
+wandb:  View run tough-cloud-5 at: https://wandb.ai/yuho2074tamura1217-keio-university-global-page/silence-transformer-classification/runs/ybdeickn
+wandb:  View project at: https://wandb.ai/yuho2074tamura1217-keio-university-global-page/silence-transformer-classification
+wandb: Synced 5 W&B file(s), 7 media file(s), 2 artifact file(s) and 0 other file(s)
+wandb: Find logs at: .\wandb\run-20250827_105902-ybdeickn\logs
+(venv) PS C:\Users\yuho2\CogniAlign\modules> 

@@ -250,6 +250,9 @@ class ADCNFeatureComparator:
     
     def _plot_tsne_2d_visualization(self, noise_free_tsne, noisy_tsne):
         """t-SNE 2次元可視化"""
+        # フォントサイズを大きく設定
+        plt.rcParams.update({'font.size': 14})
+        
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
         
         # ノイズなしデータのt-SNE可視化
@@ -264,10 +267,11 @@ class ADCNFeatureComparator:
                    c='blue', alpha=0.6, s=50, label='CN')
         ax1.scatter(features_tsne[ad_indices, 0], features_tsne[ad_indices, 1], 
                    c='red', alpha=0.6, s=50, label='AD')
-        ax1.set_title('t-SNE: Noise-Free Data')
-        ax1.set_xlabel('t-SNE 1')
-        ax1.set_ylabel('t-SNE 2')
-        ax1.legend()
+        ax1.set_title('t-SNE: Original Data', fontsize=16, fontweight='bold')
+        ax1.set_xlabel('t-SNE 1', fontsize=14)
+        ax1.set_ylabel('t-SNE 2', fontsize=14)
+        ax1.legend(fontsize=12)
+        ax1.tick_params(axis='both', which='major', labelsize=12)
         ax1.grid(True, alpha=0.3)
         
         # ノイズ付きデータのt-SNE可視化
@@ -281,10 +285,11 @@ class ADCNFeatureComparator:
                    c='blue', alpha=0.6, s=50, label='CN')
         ax2.scatter(features_tsne_noisy[ad_indices_noisy, 0], features_tsne_noisy[ad_indices_noisy, 1], 
                    c='red', alpha=0.6, s=50, label='AD')
-        ax2.set_title('t-SNE: Noisy Data')
-        ax2.set_xlabel('t-SNE 1')
-        ax2.set_ylabel('t-SNE 2')
-        ax2.legend()
+        ax2.set_title('t-SNE: Noise-Augmented Data', fontsize=16, fontweight='bold')
+        ax2.set_xlabel('t-SNE 1', fontsize=14)
+        ax2.set_ylabel('t-SNE 2', fontsize=14)
+        ax2.legend(fontsize=12)
+        ax2.tick_params(axis='both', which='major', labelsize=12)
         ax2.grid(True, alpha=0.3)
         
         plt.tight_layout()
@@ -1024,21 +1029,21 @@ class ADCNFeatureComparator:
         analysis_results = self.analyze_feature_differences()
         
         # PCA分析
-        self.plot_pca_comparison()
+        #self.plot_pca_comparison()
         
         # t-SNE分析
         self.plot_tsne_comparison()
 
         # PCA vs t-SNE比較
-        self.plot_pca_vs_tsne_comparison()
+        #self.plot_pca_vs_tsne_comparison()
         
         # 可視化
-        self.plot_feature_comparison(analysis_results)
+        #self.plot_feature_comparison(analysis_results)
         
         # サマリーレポート
-        summary = self.generate_summary_report(analysis_results)
+        #summary = self.generate_summary_report(analysis_results)
         
-        return summary
+        #return summary
 
 def main():
     """メイン関数"""

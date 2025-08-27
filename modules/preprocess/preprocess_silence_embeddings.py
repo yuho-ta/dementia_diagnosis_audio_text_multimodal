@@ -57,21 +57,29 @@ if audio_model == 'wav2vec2':
     processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
     wav2vec_model = Wav2Vec2Model.from_pretrained("facebook/wav2vec2-base-960h").to(device)
     segment_length = 50
+    # 35秒分の音声に対応するmax_lengthを計算
+    # wav2vec2は20msフレームで処理されるため、35秒 = 35000ms / 20ms = 1750フレーム
+    max_length = 1750
 elif audio_model == 'egemaps':
     smile = opensmile.Smile(
         feature_set=opensmile.FeatureSet.eGeMAPSv02,
         feature_level=opensmile.FeatureLevel.Functionals,
     )
     segment_length = 10
+    # 35秒分の音声に対応するmax_lengthを計算
+    # eGeMAPSは10msセグメントで処理されるため、35秒 = 35000ms / 10ms = 3500フレーム
+    max_length = 3500
 else:
     segment_length = 50
+    # 35秒分の音声に対応するmax_lengthを計算
+    # デフォルトは20msフレームで処理されるため、35秒 = 35000ms / 20ms = 1750フレーム
+    max_length = 1750
 
 # パス設定
 root_path = os.path.join('dataset', 'diagnosis', 'train', 'audio')
 root_text_path = os.path.join('dataset', 'diagnosis', 'train', 'silence_features')
 root_silence_audio_path = os.path.join('dataset', 'diagnosis', 'train', 'silence_audio')  # サイレンス音声ファイル保存用
 textual_data = os.path.join('dataset', 'diagnosis', 'train', 'text_transcriptions.csv')
-max_length = 200
 
 def extract_silence_from_cha(cha_file_path):
     """
@@ -274,6 +282,18 @@ def preprocess_silence_embeddings():
 
                 last_hidden_states_audio = outputs_audio.last_hidden_state.squeeze(0).cpu()
                 features_audio = last_hidden_states_audio
+                
+                # デバッグ情報: 実際のフレームレートを確認
+                audio_duration = len(wave_form) / sample_rate  # 音声の実際の長さ（秒）
+                num_frames = last_hidden_states_audio.shape[0]  # wav2vec2の出力フレーム数
+                actual_frame_rate = audio_duration / num_frames  # 実際のフレームレート（秒/フレーム）
+                
+                logger.info(f"Audio duration: {audio_duration:.2f}s")
+                logger.info(f"Wav2Vec2 output frames: {num_frames}")
+                logger.info(f"Actual frame rate: {actual_frame_rate:.3f}s per frame")
+                logger.info(f"Expected frame rate (50ms): {0.05}s per frame")
+                logger.info(f"Expected frame rate (20ms): {0.02}s per frame")
+                
                 processed_audio_tensor = torch.zeros((max_length, last_hidden_states_audio.shape[1]))
 
                 if torch.isnan(last_hidden_states_audio).any():

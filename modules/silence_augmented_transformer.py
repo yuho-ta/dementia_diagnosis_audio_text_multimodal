@@ -31,11 +31,11 @@ WARMUP_RATIO = 0.1
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # データディレクトリ
-silence_features_dir = "dataset/diagnosis/train/silence_features"
+silence_features_dir = "dataset/diagnosis/train/noise_augmented_silence_features"
 csv_labels_path = "dataset/diagnosis/train/text_transcriptions.csv"
 
 # wandb設定
-WANDB_PROJECT = "silence-transformer-classification"
+WANDB_PROJECT = "silence-augmented-transformer-classification"
 WANDB_ENTITY = None  # あなたのwandbユーザー名を設定
 
 # クラス重み計算関数
@@ -85,7 +85,7 @@ def load_silence_features():
         
         # サイレンス特徴量ファイルのパスを構築
         silence_features_path = os.path.join(silence_features_dir, diagno, 
-                                            uid + '_silence_only' + audio_data + '.pt')
+                                            uid + '_silence_noise_augmented' + audio_data + '.pt')
         
         # ファイルが存在するかチェック
         if os.path.exists(silence_features_path):

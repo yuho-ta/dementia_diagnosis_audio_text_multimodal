@@ -16,14 +16,15 @@ from tqdm import tqdm
 import wandb
 import matplotlib.pyplot as plt
 import seaborn as sns
+import re
 
 # モデル設定（英語・多言語対応wav2vec2-large-xlsr-53）
-MODEL_NAME = "facebook/wav2vec2-large-xlsr-53"
+MODEL_NAME = "facebook/wav2vec2-base-960h"
 
 # ハイパーパラメータ
 BATCH_SIZE = 8  # ファインチューニング用に調整
 GRAD_ACCUM = 4
-EPOCHS = 10
+EPOCHS = 5
 LR = 3e-5  # ファインチューニング用に学習率を下げる
 WARMUP_RATIO = 0.1
 
@@ -31,12 +32,18 @@ WARMUP_RATIO = 0.1
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # データディレクトリ
-silence_features_dir = "dataset/diagnosis/train/silence_features"
-csv_labels_path = "dataset/diagnosis/train/text_transcriptions.csv"
+original_silence_features_dir = "dataset/diagnosis/train/silence_features"
+noise_augmented_silence_features_dir = "dataset/diagnosis/train/noise_augmented_silence_features"
 
 # wandb設定
 WANDB_PROJECT = "silence-transformer-classification"
 WANDB_ENTITY = None  # あなたのwandbユーザー名を設定
+
+# ID抽出関数
+def extract_id_from_filename(filename):
+    """ファイル名からIDを抽出（例：684-0_silence_only_wav2vec2.pt → 684-0）"""
+    match = re.match(r'(\d+-\d+)', filename)
+    return match.group(1) if match else None
 
 # クラス重み計算関数
 def calculate_class_weights(labels):
@@ -65,48 +72,112 @@ def calculate_class_weights(labels):
     
     return torch.tensor(pos_weight, dtype=torch.float32)
 
-# サイレンス特徴量データ読み込み関数
-def load_silence_features():
+# サイレンス特徴量データ読み込み関数（IDベース分割対応）
+def load_silence_features_with_split():
     """
-    既存のサイレンス特徴量ファイル（.pt）を読み込む
+    既存のサイレンス特徴量ファイル（.pt）を読み込み、IDベースでtrain/testに分割
+    フォルダ名（cn/ad）からラベルを自動判定
+    オリジナルとノイズ追加の特徴量を別々に管理
     """
-    data = []
+    # 利用可能なIDを収集
+    available_ids = set()
     
-    # CSVファイルからラベル情報を読み込み
-    labels_df = pd.read_csv(csv_labels_path)
+    # Original silence featuresからIDを収集
+    for diagno in ['cn', 'ad']:
+        original_dir = os.path.join(original_silence_features_dir, diagno)
+        if os.path.exists(original_dir):
+            for filename in os.listdir(original_dir):
+                if filename.endswith('.pt'):
+                    file_id = extract_id_from_filename(filename)
+                    if file_id:
+                        available_ids.add(file_id)
     
-    # 音声モデルによるファイル名の変更
-    audio_data = '_wav2vec2'  # 既存のファイル名に合わせる
+    print(f"Total unique IDs found: {len(available_ids)}")
     
-    for index, row in labels_df.iterrows():
-        uid = row['uid']
-        diagno = row['diagno']
+    # 利用可能なIDをリストに変換してシャッフル
+    available_ids_list = list(available_ids)
+    np.random.shuffle(available_ids_list)
+    
+    # 80%をtrain、20%をtestに分割
+    split_idx = int(len(available_ids_list) * 0.8)
+    train_ids = set(available_ids_list[:split_idx])
+    test_ids = set(available_ids_list[split_idx:])
+    
+    print(f"Train IDs: {len(train_ids)}, Test IDs: {len(test_ids)}")
+    
+    # データを読み込み
+    original_train_data = []
+    noise_augmented_train_data = []
+    test_data = []
+    
+    # Original silence featuresからデータを読み込み
+    for diagno in ['cn', 'ad']:
         label = 1 if diagno == "ad" else 0
+        original_dir = os.path.join(original_silence_features_dir, diagno)
         
-        # サイレンス特徴量ファイルのパスを構築
-        silence_features_path = os.path.join(silence_features_dir, diagno, 
-                                            uid + '_silence_only' + audio_data + '.pt')
-        
-        # ファイルが存在するかチェック
-        if os.path.exists(silence_features_path):
-            try:
-                # サイレンス特徴量を読み込み
-                features = torch.load(silence_features_path)
-                data.append({
-                    "uid": uid,
-                    "features": features,
-                    "label": label,
-                    "diagno": diagno
-                })
-            except Exception as e:
-                print(f"Error loading {silence_features_path}: {e}")
-        else:
-            print(f"Missing file: {silence_features_path}")
+        if os.path.exists(original_dir):
+            for filename in os.listdir(original_dir):
+                if filename.endswith('.pt'):
+                    file_id = extract_id_from_filename(filename)
+                    if file_id:
+                        # ファイル名からuidを抽出（例：684-0_silence_only_wav2vec2.pt → 684-0）
+                        uid = file_id
+                        original_path = os.path.join(original_dir, filename)
+                        
+                        # IDがtrain/testのどちらに属するかを判定
+                        if file_id in train_ids:
+                            # Trainデータ：original features
+                            try:
+                                original_features = torch.load(original_path)
+                                original_train_data.append({
+                                    "uid": uid + "_original",
+                                    "features": original_features,
+                                    "label": label,
+                                    "diagno": diagno,
+                                    "source": "original"
+                                })
+                            except Exception as e:
+                                print(f"Error loading {original_path}: {e}")
+                            
+                            # Noise augmented featuresも追加
+                            noise_augmented_path = os.path.join(noise_augmented_silence_features_dir, diagno, 
+                                                              uid + '_silence_noise_augmented_wav2vec2.pt')
+                            if os.path.exists(noise_augmented_path):
+                                try:
+                                    noise_features = torch.load(noise_augmented_path)
+                                    noise_augmented_train_data.append({
+                                        "uid": uid + "_noise_augmented",
+                                        "features": noise_features,
+                                        "label": label,
+                                        "diagno": diagno,
+                                        "source": "noise_augmented"
+                                    })
+                                except Exception as e:
+                                    print(f"Error loading {noise_augmented_path}: {e}")
+                            
+                        elif file_id in test_ids:
+                            # Testデータ：originalのみを使用
+                            try:
+                                original_features = torch.load(original_path)
+                                test_data.append({
+                                    "uid": uid + "_original",
+                                    "features": original_features,
+                                    "label": label,
+                                    "diagno": diagno,
+                                    "source": "original"
+                                })
+                            except Exception as e:
+                                print(f"Error loading {original_path}: {e}")
     
-    print(f"Total samples loaded: {len(data)}")
-    assert len(data) > 0, "No silence features found. Check data_dir and file paths."
+    print(f"Original train samples loaded: {len(original_train_data)}")
+    print(f"Noise augmented train samples loaded: {len(noise_augmented_train_data)}")
+    print(f"Test samples loaded: {len(test_data)}")
     
-    return data
+    assert len(original_train_data) > 0, "No original train data found. Check data directories and file paths."
+    assert len(noise_augmented_train_data) > 0, "No noise augmented train data found. Check data directories and file paths."
+    assert len(test_data) > 0, "No test data found. Check data directories and file paths."
+    
+    return original_train_data, noise_augmented_train_data, test_data
 
 # Transformer分類モデル
 class TransformerClassifier(nn.Module):
@@ -317,6 +388,7 @@ def create_training_plots(train_losses, val_losses, val_accuracies, fold, stage)
 # カスタム訓練関数（ファインチューニング用）
 def train_model(model, train_dataloader, val_dataloader, optimizer, scheduler, device, epochs, grad_accum_steps, fold, stage, criterion=None):
     best_accuracy = 0
+    best_model_state = None
     train_losses = []
     val_losses = []
     val_accuracies = []
@@ -396,25 +468,38 @@ def train_model(model, train_dataloader, val_dataloader, optimizer, scheduler, d
         # wandbにログ
         wandb.log(log_dict)
         
-        # ベストモデル保存（F1-scoreを使用、モデルファイルは保存しない）
+        # ベストモデル保存（F1-scoreを使用）
         if val_metrics and val_metrics['f1'] > best_accuracy:
             best_accuracy = val_metrics['f1']
+            best_model_state = model.state_dict().copy()  # ベストモデルの状態を保存
         elif not val_metrics and val_accuracy > best_accuracy:
             best_accuracy = val_accuracy
+            best_model_state = model.state_dict().copy()  # ベストモデルの状態を保存
     
     # 訓練プロットを作成
     create_training_plots(train_losses, val_losses, val_accuracies, fold, stage)
     
-    return train_losses, val_losses, val_accuracies, best_accuracy
+    return train_losses, val_losses, val_accuracies, best_accuracy, best_model_state
 
 # メイン実行部分
 if __name__ == "__main__":
+    import argparse
+    
+    # コマンドライン引数の解析
+    parser = argparse.ArgumentParser(description='Train silence-only transformer classifier')
+    parser.add_argument('--data_type', type=str, choices=['original', 'noise_augmented'], 
+                       required=True, help='Type of data to use for training')
+    args = parser.parse_args()
+    
+    data_type = args.data_type
+    
     # wandb初期化
     wandb.init(
         project=WANDB_PROJECT,
         entity=WANDB_ENTITY,
         config={
             "model_name": MODEL_NAME,
+            "data_type": data_type,
             "batch_size": BATCH_SIZE,
             "grad_accum": GRAD_ACCUM,
             "epochs": EPOCHS,
@@ -423,71 +508,111 @@ if __name__ == "__main__":
             "num_labels": 1, # Binary classification: single output
             "device": str(device)
         },
-        tags=["silence", "transformer", "classification", "alzheimer", "wav2vec2-features"]
+        tags=["silence", "transformer", "classification", "alzheimer", "wav2vec2-features", f"{data_type}-training"]
     )
     
-    print("Loading silence features...")
-    data = load_silence_features()
+    print("Loading silence features with ID-based split...")
+    original_train_data, noise_augmented_train_data, test_data = load_silence_features_with_split()
     
     # データセット統計をwandbにログ
-    total_samples = len(data)
-    cn_samples = sum(1 for item in data if item["label"] == 0)
-    ad_samples = sum(1 for item in data if item["label"] == 1)
+    total_original_train_samples = len(original_train_data)
+    total_noise_augmented_train_samples = len(noise_augmented_train_data)
+    total_test_samples = len(test_data)
+    total_samples = total_original_train_samples + total_noise_augmented_train_samples + total_test_samples
+    
+    original_train_cn_samples = sum(1 for item in original_train_data if item["label"] == 0)
+    original_train_ad_samples = sum(1 for item in original_train_data if item["label"] == 1)
+    noise_augmented_train_cn_samples = sum(1 for item in noise_augmented_train_data if item["label"] == 0)
+    noise_augmented_train_ad_samples = sum(1 for item in noise_augmented_train_data if item["label"] == 1)
+    test_cn_samples = sum(1 for item in test_data if item["label"] == 0)
+    test_ad_samples = sum(1 for item in test_data if item["label"] == 1)
     
     wandb.log({
         "dataset/total_samples": total_samples,
-        "dataset/cn_samples": cn_samples,
-        "dataset/ad_samples": ad_samples,
-        "dataset/cn_ratio": cn_samples / total_samples,
-        "dataset/ad_ratio": ad_samples / total_samples
+        "dataset/original_train_samples": total_original_train_samples,
+        "dataset/noise_augmented_train_samples": total_noise_augmented_train_samples,
+        "dataset/test_samples": total_test_samples,
+        "dataset/original_train_cn_samples": original_train_cn_samples,
+        "dataset/original_train_ad_samples": original_train_ad_samples,
+        "dataset/noise_augmented_train_cn_samples": noise_augmented_train_cn_samples,
+        "dataset/noise_augmented_train_ad_samples": noise_augmented_train_ad_samples,
+        "dataset/test_cn_samples": test_cn_samples,
+        "dataset/test_ad_samples": test_ad_samples
     })
+    
+    print(f"Original train data: {total_original_train_samples} samples (CN: {original_train_cn_samples}, AD: {original_train_ad_samples})")
+    print(f"Noise augmented train data: {total_noise_augmented_train_samples} samples (CN: {noise_augmented_train_cn_samples}, AD: {noise_augmented_train_ad_samples})")
+    print(f"Test data: {total_test_samples} samples (CN: {test_cn_samples}, AD: {test_ad_samples})")
     
     # wav2vec2モデルを特徴量抽出器として準備（実際には使用しないが、設定のため）
     feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(MODEL_NAME)
     
-    # Stratified k-fold cross validation設定（ADとCNの比率を保持）
-    # ラベルを抽出してstratified splitに使用
-    labels = [item["label"] for item in data]
+    print(f"\n{'='*50}")
+    print(f"Training model with {data_type} features")
+    print(f"{'='*50}")
+    
+    # データタイプに応じてデータを選択
+    if data_type == 'original':
+        train_data = original_train_data
+    else:
+        train_data = noise_augmented_train_data
+    
+    # Stratified k-fold cross validation設定
+    train_labels = [item["label"] for item in train_data]
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     
     all_fold_results = []
+   
+    # テストデータローダーを準備（全foldで共通）
+    test_dataset = SilenceFeaturesDataset(test_data)
+    test_dataloader = DataLoader(
+        test_dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        collate_fn=collate_fn
+    )
     
-    for fold, (train_idx, val_idx) in enumerate(skf.split(data, labels)):
-        print(f"\n### Fold {fold + 1}")
+    # テスト評価の集計用
+    test_f1_scores = []
+    test_accuracies = []
+    test_auc_rocs = []
+    
+    for fold, (train_idx, val_idx) in enumerate(skf.split(train_data, train_labels)):
+        print(f"\n### Fold {fold + 1} - {data_type.upper()} Features")
         
         # 出力ディレクトリ作成
-        os.makedirs(f"./results_fold{fold+1}", exist_ok=True)
+        os.makedirs(f"./results_{data_type}_fold{fold+1}", exist_ok=True)
     
         # train/val データセット選択
-        train_data = [data[i] for i in train_idx]
-        val_data = [data[i] for i in val_idx]
+        train_data_fold = [train_data[i] for i in train_idx]
+        val_data_fold = [train_data[i] for i in val_idx]
         
         # クラス重み計算
-        train_labels = [item["label"] for item in train_data]
-        val_labels = [item["label"] for item in val_data]
+        train_labels_fold = [item["label"] for item in train_data_fold]
+        val_labels_fold = [item["label"] for item in val_data_fold]
         
         # 各foldのクラス分布を詳細に表示
         print(f"Fold {fold + 1} train label distribution:")
-        train_dist = pd.Series(train_labels).value_counts().sort_index()
+        train_dist = pd.Series(train_labels_fold).value_counts().sort_index()
         print(f"  CN (0): {train_dist.get(0, 0)} samples")
         print(f"  AD (1): {train_dist.get(1, 0)} samples")
-        print(f"  Total: {len(train_labels)} samples")
+        print(f"  Total: {len(train_labels_fold)} samples")
         
         print(f"Fold {fold + 1} validation label distribution:")
-        val_dist = pd.Series(val_labels).value_counts().sort_index()
+        val_dist = pd.Series(val_labels_fold).value_counts().sort_index()
         print(f"  CN (0): {val_dist.get(0, 0)} samples")
         print(f"  AD (1): {val_dist.get(1, 0)} samples")
-        print(f"  Total: {len(val_labels)} samples")
+        print(f"  Total: {len(val_labels_fold)} samples")
         
         # 全体の分布との比較
-        total_dist = pd.Series(labels).value_counts().sort_index()
-        print(f"Overall dataset distribution:")
+        total_dist = pd.Series(train_labels).value_counts().sort_index()
+        print(f"Overall train dataset distribution:")
         print(f"  CN (0): {total_dist.get(0, 0)} samples")
         print(f"  AD (1): {total_dist.get(1, 0)} samples")
-        print(f"  Total: {len(labels)} samples")
+        print(f"  Total: {len(train_labels)} samples")
         
         # Calculate class weights for imbalanced dataset
-        pos_weight = calculate_class_weights(train_labels)
+        pos_weight = calculate_class_weights(train_labels_fold)
         print(f"Fold {fold + 1} pos_weight: {pos_weight.item():.4f}")
         
         # Create BCEWithLogitsLoss with class weighting
@@ -500,22 +625,22 @@ if __name__ == "__main__":
         fold_ad_val = val_dist.get(1, 0)
         
         wandb.log({
-            f"fold_{fold+1}/train_cn": fold_cn_train,
-            f"fold_{fold+1}/train_ad": fold_ad_train,
-            f"fold_{fold+1}/val_cn": fold_cn_val,
-            f"fold_{fold+1}/val_ad": fold_ad_val,
-            f"fold_{fold+1}/train_total": len(train_data),
-            f"fold_{fold+1}/val_total": len(val_data),
-            f"fold_{fold+1}/pos_weight": pos_weight.item(),
-            f"fold_{fold+1}/train_cn_ratio": fold_cn_train / len(train_data),
-            f"fold_{fold+1}/train_ad_ratio": fold_ad_train / len(train_data),
-            f"fold_{fold+1}/val_cn_ratio": fold_cn_val / len(val_data),
-            f"fold_{fold+1}/val_ad_ratio": fold_ad_val / len(val_data)
+            f"{data_type}_fold_{fold+1}/train_cn": fold_cn_train,
+            f"{data_type}_fold_{fold+1}/train_ad": fold_ad_train,
+            f"{data_type}_fold_{fold+1}/val_cn": fold_cn_val,
+            f"{data_type}_fold_{fold+1}/val_ad": fold_ad_val,
+            f"{data_type}_fold_{fold+1}/train_total": len(train_data_fold),
+            f"{data_type}_fold_{fold+1}/val_total": len(val_data_fold),
+            f"{data_type}_fold_{fold+1}/pos_weight": pos_weight.item(),
+            f"{data_type}_fold_{fold+1}/train_cn_ratio": fold_cn_train / len(train_data_fold),
+            f"{data_type}_fold_{fold+1}/train_ad_ratio": fold_ad_train / len(train_data_fold),
+            f"{data_type}_fold_{fold+1}/val_cn_ratio": fold_cn_val / len(val_data_fold),
+            f"{data_type}_fold_{fold+1}/val_ad_ratio": fold_ad_val / len(val_data_fold)
         })
         
         # カスタムデータセット作成
-        train_dataset = SilenceFeaturesDataset(train_data)
-        val_dataset = SilenceFeaturesDataset(val_data)
+        train_dataset = SilenceFeaturesDataset(train_data_fold)
+        val_dataset = SilenceFeaturesDataset(val_data_fold)
         
         # データローダー作成
         train_dataloader = DataLoader(
@@ -548,18 +673,50 @@ if __name__ == "__main__":
         scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=total_steps)
         
         # モデルのファインチューニング
-        train_losses, val_losses, val_accuracies, best_accuracy = train_model(
-            model, train_dataloader, val_dataloader, optimizer, scheduler, device, EPOCHS, GRAD_ACCUM, fold, "transformer", criterion
+        train_losses, val_losses, val_accuracies, best_accuracy, best_model_state = train_model(
+            model, train_dataloader, val_dataloader, optimizer, scheduler, device, EPOCHS, GRAD_ACCUM, fold, f"{data_type}_transformer", criterion
         )
         
-        # 結果を保存（既にtrain_modelで計算済み）
-        # best_accuracyはF1-scoreを使用
+        # 各epochでの最高値を計算
+        best_val_accuracy = max(val_accuracies)
+        best_val_loss = min(val_losses)
+        
+        # ベストモデルの状態を復元（テスト用）
+        if best_model_state is not None:
+            model.load_state_dict(best_model_state)
+            print(f"Best model state restored for fold {fold + 1} testing")
+        else:
+            print(f"Warning: No best model state available for fold {fold + 1}")
+        
+        # テストデータで評価（各foldで共通テストセット）
+        test_eval = evaluate_model(model, test_dataloader, device, criterion)
+        if len(test_eval) == 5:
+            test_loss, test_acc, _, _, test_metrics = test_eval
+            test_f1 = float(test_metrics.get('f1', 0.0))
+            test_auc = float(test_metrics.get('auc_roc', 0.0))
+        else:
+            test_loss, test_acc, _, _ = test_eval
+            test_f1 = 0.0
+            test_auc = 0.0
+       
+        test_f1_scores.append(test_f1)
+        test_accuracies.append(float(test_acc))
+        test_auc_rocs.append(test_auc)
+       
+        wandb.log({
+            f"{data_type}_fold_{fold+1}/test_loss": float(test_loss),
+            f"{data_type}_fold_{fold+1}/test_accuracy": float(test_acc),
+            f"{data_type}_fold_{fold+1}/test_f1": test_f1,
+            f"{data_type}_fold_{fold+1}/test_auc": test_auc
+        })
         
         # 最終的なfold結果をwandbにログ
         log_dict = {
-            f"fold_{fold+1}/best_f1": best_accuracy,
-            f"fold_{fold+1}/final_val_accuracy": val_accuracies[-1],
-            f"fold_{fold+1}/final_val_loss": val_losses[-1]
+            f"{data_type}_fold_{fold+1}/best_f1": best_accuracy,
+            f"{data_type}_fold_{fold+1}/best_val_accuracy": best_val_accuracy,
+            f"{data_type}_fold_{fold+1}/best_val_loss": best_val_loss,
+            f"{data_type}_fold_{fold+1}/final_val_accuracy": val_accuracies[-1],
+            f"{data_type}_fold_{fold+1}/final_val_loss": val_losses[-1]
         }
         
         wandb.log(log_dict)
@@ -567,7 +724,10 @@ if __name__ == "__main__":
         # 結果保存
         fold_result = {
             "fold": fold + 1,
+            "data_type": data_type,
             "best_f1": best_accuracy,
+            "best_val_accuracy": best_val_accuracy,
+            "best_val_loss": best_val_loss,
             "final_val_accuracy": val_accuracies[-1],
             "final_val_loss": val_losses[-1],
             "train_losses": train_losses,
@@ -576,58 +736,89 @@ if __name__ == "__main__":
         }
         all_fold_results.append(fold_result)
         
-        print(f"Fold {fold + 1} completed. Best F1-score: {best_accuracy:.4f}")
+        print(f"Fold {fold + 1} ({data_type}) completed. Best F1-score: {best_accuracy:.4f}, Best Accuracy: {best_val_accuracy:.4f}")
     
     # 全foldでのADサンプルの使用状況を確認
-    print("\n=== AD Sample Usage Across All Folds ===")
+    print(f"\n=== AD Sample Usage Across All Folds ({data_type.upper()}) ===")
     all_ad_samples = set()
-    for fold, (train_idx, val_idx) in enumerate(skf.split(data, labels)):
-        fold_ad_train = [data[i]["uid"] for i in train_idx if data[i]["label"] == 1]
-        fold_ad_val = [data[i]["uid"] for i in val_idx if data[i]["label"] == 1]
+    for fold, (train_idx, val_idx) in enumerate(skf.split(train_data, train_labels)):
+        fold_ad_train = [train_data[i]["uid"] for i in train_idx if train_data[i]["label"] == 1]
+        fold_ad_val = [train_data[i]["uid"] for i in val_idx if train_data[i]["label"] == 1]
         fold_ad_all = fold_ad_train + fold_ad_val
         all_ad_samples.update(fold_ad_all)
         print(f"Fold {fold + 1}: {len(fold_ad_all)} AD samples")
     
-    total_ad_samples = sum(1 for item in data if item["label"] == 1)
+    total_ad_samples = sum(1 for item in train_data if item["label"] == 1)
     print(f"Total unique AD samples used across all folds: {len(all_ad_samples)}")
-    print(f"Total AD samples in dataset: {total_ad_samples}")
+    print(f"Total AD samples in train dataset: {total_ad_samples}")
     print(f"All AD samples used: {'Yes' if len(all_ad_samples) == total_ad_samples else 'No'}")
     
     # 全foldの結果表示
     df_results = pd.DataFrame([{
         "fold": result["fold"],
+        "data_type": result["data_type"],
         "best_f1": result["best_f1"],
+        "best_val_accuracy": result["best_val_accuracy"],
+        "best_val_loss": result["best_val_loss"],
         "final_val_accuracy": result["final_val_accuracy"],
-        "final_val_f1": result.get("final_val_f1", 0),
-        "final_val_precision": result.get("final_val_precision", 0),
-        "final_val_recall": result.get("final_val_recall", 0),
-        "final_val_auc_roc": result.get("final_val_auc_roc", 0),
         "final_val_loss": result["final_val_loss"]
     } for result in all_fold_results])
     
-    print("\n=== Final Results ===")
+    print(f"\n=== Final Results ({data_type.upper()}) ===")
     print(df_results)
     
-    mean_f1 = df_results['best_f1'].mean()
-    std_f1 = df_results['best_f1'].std()
-    mean_accuracy = df_results['final_val_accuracy'].mean()
-    std_accuracy = df_results['final_val_accuracy'].std()
+    # テスト結果の集計と表示（fold平均）
+    if len(test_f1_scores) > 0:
+        mean_test_f1 = float(np.mean(test_f1_scores))
+        std_test_f1 = float(np.std(test_f1_scores))
+        mean_test_acc = float(np.mean(test_accuracies))
+        std_test_acc = float(np.std(test_accuracies))
+        mean_test_auc = float(np.mean(test_auc_rocs))
+        std_test_auc = float(np.std(test_auc_rocs))
+        print(f"\n=== Test Performance Across Folds ({data_type.upper()}) (Average ± Std) ===")
+        print(f"Test F1-score: {mean_test_f1:.4f} ± {std_test_f1:.4f}")
+        print(f"Test Accuracy: {mean_test_acc:.4f} ± {std_test_acc:.4f}")
+        print(f"Test AUC: {mean_test_auc:.4f} ± {std_test_auc:.4f}")
+        
+        wandb.log({
+            f"{data_type}_test/mean_f1": mean_test_f1,
+            f"{data_type}_test/std_f1": std_test_f1,
+            f"{data_type}_test/mean_accuracy": mean_test_acc,
+            f"{data_type}_test/std_accuracy": std_test_acc,
+            f"{data_type}_test/mean_auc": mean_test_auc,
+            f"{data_type}_test/std_auc": std_test_auc,
+        })
     
-    print(f"\nMean F1-score across folds: {mean_f1:.4f} ± {std_f1:.4f}")
-    print(f"Mean accuracy across folds: {mean_accuracy:.4f} ± {std_accuracy:.4f}")
+    # 各epochでの最高値の平均を計算
+    mean_best_f1 = df_results['best_f1'].mean()
+    std_best_f1 = df_results['best_f1'].std()
+    mean_best_accuracy = df_results['best_val_accuracy'].mean()
+    std_best_accuracy = df_results['best_val_accuracy'].std()
+    mean_best_loss = df_results['best_val_loss'].mean()
+    std_best_loss = df_results['best_val_loss'].std()
+    
+    print(f"\n=== Best Values Across Epochs ({data_type.upper()}) (Average ± Std) ===")
+    print(f"Best F1-score: {mean_best_f1:.4f} ± {std_best_f1:.4f}")
+    print(f"Best Accuracy: {mean_best_accuracy:.4f} ± {std_best_accuracy:.4f}")
+    print(f"Best Loss: {mean_best_loss:.4f} ± {std_best_loss:.4f}")
     
     # 最終結果をwandbにログ
     wandb.log({
-        "final/mean_f1": mean_f1,
-        "final/std_f1": std_f1,
-        "final/mean_accuracy": mean_accuracy,
-        "final/std_accuracy": std_accuracy,
-        "final/results_table": wandb.Table(dataframe=df_results),
-        "final/stratified_split_info": {
+        f"{data_type}_final/mean_best_f1": mean_best_f1,
+        f"{data_type}_final/std_best_f1": std_best_f1,
+        f"{data_type}_final/mean_best_accuracy": mean_best_accuracy,
+        f"{data_type}_final/std_best_accuracy": std_best_accuracy,
+        f"{data_type}_final/mean_best_loss": mean_best_loss,
+        f"{data_type}_final/std_best_loss": std_best_loss,
+        f"{data_type}_final/results_table": wandb.Table(dataframe=df_results),
+        f"{data_type}_final/stratified_split_info": {
+            "total_train_samples": len(train_data),
+            "total_test_samples": total_test_samples,
             "total_ad_samples": total_ad_samples,
             "unique_ad_samples_used": len(all_ad_samples),
             "all_ad_samples_used": len(all_ad_samples) == total_ad_samples,
-            "cv_method": "StratifiedKFold"
+            "cv_method": "StratifiedKFold",
+            "split_method": "ID-based split (80% train, 20% test)"
         }
     })
     
@@ -636,7 +827,7 @@ if __name__ == "__main__":
     
     plt.subplot(1, 3, 1)
     plt.bar(df_results['fold'], df_results['best_f1'])
-    plt.title('Best F1-Score by Fold')
+    plt.title(f'Best F1-Score by Fold ({data_type.upper()})')
     plt.xlabel('Fold')
     plt.ylabel('Best F1-Score')
     plt.ylim(0, 1)
@@ -645,28 +836,62 @@ if __name__ == "__main__":
     plt.grid(True, alpha=0.3)
     
     plt.subplot(1, 3, 2)
-    plt.bar(df_results['fold'], df_results['final_val_accuracy'])
-    plt.title('Final Validation Accuracy by Fold')
+    plt.bar(df_results['fold'], df_results['best_val_accuracy'])
+    plt.title(f'Best Validation Accuracy by Fold ({data_type.upper()})')
     plt.xlabel('Fold')
     plt.ylabel('Accuracy')
     plt.ylim(0, 1)
-    for i, v in enumerate(df_results['final_val_accuracy']):
+    for i, v in enumerate(df_results['best_val_accuracy']):
         plt.text(i+1, v + 0.01, f'{v:.3f}', ha='center')
     plt.grid(True, alpha=0.3)
     
     plt.subplot(1, 3, 3)
-    plt.bar(df_results['fold'], df_results['final_val_auc_roc'])
-    plt.title('Final Validation AUC-ROC by Fold')
+    plt.bar(df_results['fold'], df_results['best_val_loss'])
+    plt.title(f'Best Validation Loss by Fold ({data_type.upper()})')
     plt.xlabel('Fold')
-    plt.ylabel('AUC-ROC')
-    plt.ylim(0, 1)
-    for i, v in enumerate(df_results['final_val_auc_roc']):
+    plt.ylabel('Loss')
+    for i, v in enumerate(df_results['best_val_loss']):
         plt.text(i+1, v + 0.01, f'{v:.3f}', ha='center')
     plt.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    wandb.log({"final/metrics_by_fold": wandb.Image(plt)})
+    wandb.log({f"{data_type}_final/best_metrics_by_fold": wandb.Image(plt)})
     plt.close()
+    
+    # テストデータでの最終評価（オプション）
+    print(f"\n=== Test Data Evaluation ({data_type.upper()}) ===")
+    print(f"Test data contains {len(test_data)} samples")
+    print(f"Test CN samples: {test_cn_samples}, Test AD samples: {test_ad_samples}")
+    
+    print(f"\n{data_type.upper()} model training completed!")
+    
+    # 最終的なF1、Accuracy、AUCスコアの表示（テスト指標）
+    print(f"\n{'='*60}")
+    print(f"FINAL PERFORMANCE SUMMARY - {data_type.upper().replace('_', ' ')} MODEL")
+    print(f"{'='*60}")
+    if len(test_f1_scores) > 0:
+        print(f"Test F1-Score: {mean_test_f1:.4f} ± {std_test_f1:.4f}")
+        print(f"Test Accuracy: {mean_test_acc:.4f} ± {std_test_acc:.4f}")
+        print(f"Test AUC: {mean_test_auc:.4f} ± {std_test_auc:.4f}")
+    else:
+        print("Test metrics not available.")
+    print(f"Cross-validation folds: 5")
+    print(f"Training samples: {len(train_data)}")
+    print(f"Test samples: {len(test_data)}")
+    
+    # wandbに最終サマリーをログ
+    wandb.log({
+        "final_summary/test_f1_score": mean_test_f1 if len(test_f1_scores) > 0 else None,
+        "final_summary/test_f1_score_std": std_test_f1 if len(test_f1_scores) > 0 else None,
+        "final_summary/test_accuracy": mean_test_acc if len(test_accuracies) > 0 else None,
+        "final_summary/test_accuracy_std": std_test_acc if len(test_accuracies) > 0 else None,
+        "final_summary/test_auc": mean_test_auc if len(test_auc_rocs) > 0 else None,
+        "final_summary/test_auc_std": std_test_auc if len(test_auc_rocs) > 0 else None,
+        "final_summary/data_type": data_type,
+        "final_summary/cv_folds": 5,
+        "final_summary/training_samples": len(train_data),
+        "final_summary/test_samples": len(test_data)
+    })
     
     # wandb終了
     wandb.finish()

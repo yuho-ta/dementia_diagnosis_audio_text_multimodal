@@ -22,10 +22,10 @@ import re
 MODEL_NAME = "facebook/wav2vec2-base-960h"
 
 # ハイパーパラメータ
-BATCH_SIZE = 8  # ファインチューニング用に調整
+BATCH_SIZE = 16  # ファインチューニング用に調整
 GRAD_ACCUM = 4
-EPOCHS = 10
-LR = 1e-5  
+EPOCHS = 5
+LR = 5e-5  
 WARMUP_RATIO = 0.1
 
 # デバイス設定
@@ -576,9 +576,10 @@ if __name__ == "__main__":
     test_f1_scores = []
     test_accuracies = []
     test_auc_rocs = []
+    test_precisions = []
     
-    # 最良のモデル追跡用
-    best_test_f1 = 0.0
+    # 最良のモデル追跡用（precision基準）
+    best_test_precision = 0.0
     best_test_model_state = None
     best_fold = 0
     
@@ -699,27 +700,31 @@ if __name__ == "__main__":
             test_loss, test_acc, _, _, test_metrics = test_eval
             test_f1 = float(test_metrics.get('f1', 0.0))
             test_auc = float(test_metrics.get('auc_roc', 0.0))
+            test_precision = float(test_metrics.get('precision', 0.0))
         else:
             test_loss, test_acc, _, _ = test_eval
             test_f1 = 0.0
             test_auc = 0.0
+            test_precision = 0.0
        
         test_f1_scores.append(test_f1)
         test_accuracies.append(float(test_acc))
         test_auc_rocs.append(test_auc)
+        test_precisions.append(test_precision)
         
-        # 最良のテストF1スコアのモデルを追跡
-        if test_f1 > best_test_f1:
-            best_test_f1 = test_f1
+        # 最良のテストprecisionのモデルを追跡
+        if test_precision > best_test_precision:
+            best_test_precision = test_precision
             best_test_model_state = model.state_dict().copy()
             best_fold = fold + 1
-            print(f"New best test F1-score: {test_f1:.4f} (Fold {fold + 1})")
+            print(f"New best test precision: {test_precision:.4f} (Fold {fold + 1})")
        
         wandb.log({
             f"{data_type}_fold_{fold+1}/test_loss": float(test_loss),
             f"{data_type}_fold_{fold+1}/test_accuracy": float(test_acc),
             f"{data_type}_fold_{fold+1}/test_f1": test_f1,
-            f"{data_type}_fold_{fold+1}/test_auc": test_auc
+            f"{data_type}_fold_{fold+1}/test_auc": test_auc,
+            f"{data_type}_fold_{fold+1}/test_precision": test_precision
         })
         
         # 最終的なfold結果をwandbにログ
@@ -787,10 +792,13 @@ if __name__ == "__main__":
         std_test_acc = float(np.std(test_accuracies))
         mean_test_auc = float(np.mean(test_auc_rocs))
         std_test_auc = float(np.std(test_auc_rocs))
+        mean_test_precision = float(np.mean(test_precisions))
+        std_test_precision = float(np.std(test_precisions))
         print(f"\n=== Test Performance Across Folds ({data_type.upper()}) (Average ± Std) ===")
         print(f"Test F1-score: {mean_test_f1:.4f} ± {std_test_f1:.4f}")
         print(f"Test Accuracy: {mean_test_acc:.4f} ± {std_test_acc:.4f}")
         print(f"Test AUC: {mean_test_auc:.4f} ± {std_test_auc:.4f}")
+        print(f"Test Precision: {mean_test_precision:.4f} ± {std_test_precision:.4f}")
         
         wandb.log({
             f"{data_type}_test/mean_f1": mean_test_f1,
@@ -799,6 +807,8 @@ if __name__ == "__main__":
             f"{data_type}_test/std_accuracy": std_test_acc,
             f"{data_type}_test/mean_auc": mean_test_auc,
             f"{data_type}_test/std_auc": std_test_auc,
+            f"{data_type}_test/mean_precision": mean_test_precision,
+            f"{data_type}_test/std_precision": std_test_precision,
         })
     
     # 各epochでの最高値の平均を計算
@@ -877,7 +887,7 @@ if __name__ == "__main__":
     
     print(f"\n{data_type.upper()} model training completed!")
     
-    # 最終的なF1、Accuracy、AUCスコアの表示（テスト指標）
+    # 最終的なF1、Accuracy、AUC、Precisionスコアの表示（テスト指標）
     print(f"\n{'='*60}")
     print(f"FINAL PERFORMANCE SUMMARY - {data_type.upper().replace('_', ' ')} MODEL")
     print(f"{'='*60}")
@@ -885,6 +895,7 @@ if __name__ == "__main__":
         print(f"Test F1-Score: {mean_test_f1:.4f} ± {std_test_f1:.4f}")
         print(f"Test Accuracy: {mean_test_acc:.4f} ± {std_test_acc:.4f}")
         print(f"Test AUC: {mean_test_auc:.4f} ± {std_test_auc:.4f}")
+        print(f"Test Precision: {mean_test_precision:.4f} ± {std_test_precision:.4f}")
     else:
         print("Test metrics not available.")
     print(f"Cross-validation folds: 5")
@@ -899,6 +910,8 @@ if __name__ == "__main__":
         "final_summary/test_accuracy_std": std_test_acc if len(test_accuracies) > 0 else None,
         "final_summary/test_auc": mean_test_auc if len(test_auc_rocs) > 0 else None,
         "final_summary/test_auc_std": std_test_auc if len(test_auc_rocs) > 0 else None,
+        "final_summary/test_precision": mean_test_precision if len(test_precisions) > 0 else None,
+        "final_summary/test_precision_std": std_test_precision if len(test_precisions) > 0 else None,
         "final_summary/data_type": data_type,
         "final_summary/cv_folds": 5,
         "final_summary/training_samples": len(train_data),
@@ -916,7 +929,7 @@ if __name__ == "__main__":
         os.makedirs(model_save_dir, exist_ok=True)
         
         # モデルファイル名
-        model_filename = f"best_model_fold{best_fold}_test_f1_{best_test_f1:.4f}.pt"
+        model_filename = f"best_model_fold{best_fold}_test_precision_{best_test_precision:.4f}.pt"
         model_path = os.path.join(model_save_dir, model_filename)
         
         # モデルを保存
@@ -932,7 +945,8 @@ if __name__ == "__main__":
             'training_info': {
                 'data_type': data_type,
                 'best_fold': best_fold,
-                'best_test_f1': best_test_f1,
+                'best_test_precision': best_test_precision,
+                'best_test_f1': test_f1_scores[best_fold - 1],
                 'best_test_accuracy': test_accuracies[best_fold - 1],
                 'best_test_auc': test_auc_rocs[best_fold - 1],
                 'total_folds': 5,
@@ -942,18 +956,20 @@ if __name__ == "__main__":
         }, model_path)
         
         print(f"\n{'='*60}")
-        print(f"BEST MODEL SAVED")
+        print(f"BEST MODEL SAVED (PRECISION-BASED)")
         print(f"{'='*60}")
         print(f"Model saved to: {model_path}")
         print(f"Best fold: {best_fold}")
-        print(f"Best test F1-score: {best_test_f1:.4f}")
+        print(f"Best test precision: {best_test_precision:.4f}")
+        print(f"Best test F1-score: {test_f1_scores[best_fold - 1]:.4f}")
         print(f"Best test accuracy: {test_accuracies[best_fold - 1]:.4f}")
         print(f"Best test AUC: {test_auc_rocs[best_fold - 1]:.4f}")
         
         # wandbに最良モデル情報をログ
         wandb.log({
             "best_model/fold": best_fold,
-            "best_model/test_f1": best_test_f1,
+            "best_model/test_precision": best_test_precision,
+            "best_model/test_f1": test_f1_scores[best_fold - 1],
             "best_model/test_accuracy": test_accuracies[best_fold - 1],
             "best_model/test_auc": test_auc_rocs[best_fold - 1],
             "best_model/model_path": model_path

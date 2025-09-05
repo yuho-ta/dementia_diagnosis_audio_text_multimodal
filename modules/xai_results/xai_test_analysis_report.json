@@ -1,0 +1,14 @@
+{
+  "analysis_timestamp": "2025-09-05T21:48:14.096533",
+  "model_path": "models/original_transformer\\best_model_fold3_test_precision_0.8125.pt",
+  "data_type": "original",
+  "analysis_type": "test_dataset",
+  "total_samples_analyzed": 57,
+  "ad_samples": 38,
+  "cn_samples": 19,
+  "overall_accuracy": 0.6140350877192983,
+  "ad_accuracy": 0.5526315789473685,
+  "cn_accuracy": 0.7368421052631579,
+  "average_confidence": 0.5030892935761234,
+  "samples_with_audio": 57
+}

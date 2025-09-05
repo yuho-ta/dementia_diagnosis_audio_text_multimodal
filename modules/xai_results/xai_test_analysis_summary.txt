@@ -1,0 +1,15 @@
+XAI Test Dataset Analysis Summary Report
+==================================================
+
+Analysis Date: 2025-09-05T21:48:14.096533
+Model Path: models/original_transformer\best_model_fold3_test_precision_0.8125.pt
+Data Type: original
+Analysis Type: test_dataset
+
+Total Samples Analyzed: 57
+AD Samples: 38 (Accuracy: 0.553)
+CN Samples: 19 (Accuracy: 0.737)
+
+Overall Accuracy: 0.614
+Average Confidence: 0.503
+Samples with Audio: 57

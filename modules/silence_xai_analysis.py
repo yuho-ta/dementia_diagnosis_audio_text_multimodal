@@ -80,7 +80,8 @@ class GradCAM:
         
         # バックワードパス
         self.model.zero_grad()
-        output[0, class_idx].backward(retain_graph=True)
+        # バイナリ分類の場合、出力は[1, 1]なので、output[0, 0]を使用
+        output[0, 0].backward(retain_graph=True)
         
         # 勾配とアクティベーションを取得
         gradients = self.gradients[0]  # [seq_len, hidden_dim]
@@ -114,7 +115,8 @@ class GradCAM:
         
         # バックワードパス
         self.model.zero_grad()
-        output[0, class_idx].backward(retain_graph=True)
+        # バイナリ分類の場合、出力は[1, 1]なので、output[0, 0]を使用
+        output[0, 0].backward(retain_graph=True)
         
         # 勾配とアクティベーションを取得
         gradients = self.gradients[0]  # [seq_len, hidden_dim]
@@ -129,7 +131,7 @@ class GradCAM:
             'activations_mean': activations.mean().item(),
             'activations_std': activations.std().item(),
             'class_idx': class_idx.item() if hasattr(class_idx, 'item') else class_idx,
-            'output_confidence': torch.sigmoid(output[0, class_idx]).item()
+            'output_confidence': torch.sigmoid(output[0, 0]).item()
         }
         
         # Grad-CAMの正しい計算
@@ -277,11 +279,32 @@ class XAIAnalyzer:
         if os.path.exists(self.model_path):
             # 重みを読み込み
             checkpoint = torch.load(self.model_path, map_location=device)
+            print(f"Checkpoint keys: {list(checkpoint.keys())}")
+            
+            # チェックポイントの詳細情報を表示
+            if 'training_info' in checkpoint:
+                training_info = checkpoint['training_info']
+                print(f"Training info: {training_info}")
+            
             if 'model_state_dict' in checkpoint:
                 self.model.load_state_dict(checkpoint['model_state_dict'])
+                print("Loaded model_state_dict from checkpoint")
             else:
                 self.model.load_state_dict(checkpoint)
-            print("Trained model loaded successfully")
+                print("Loaded checkpoint directly as state_dict")
+            
+            # モデルの重みの統計情報を表示
+            total_params = sum(p.numel() for p in self.model.parameters())
+            trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+            print(f"Model loaded successfully - Total params: {total_params:,}, Trainable: {trainable_params:,}")
+            
+            # 分類ヘッドの重みを確認
+            classifier_weight = self.model.classifier[-1].weight.data
+            classifier_bias = self.model.classifier[-1].bias.data
+            print(f"Final classifier weight shape: {classifier_weight.shape}")
+            print(f"Final classifier weight mean: {classifier_weight.mean().item():.4f}")
+            print(f"Final classifier weight std: {classifier_weight.std().item():.4f}")
+            print(f"Final classifier bias: {classifier_bias.item():.4f}")
         else:
             # モデルファイルが存在しない場合は、ランダム初期化されたモデルを使用
             print("Model file not found. Using randomly initialized model for demonstration.")
@@ -306,15 +329,44 @@ class XAIAnalyzer:
         4. 時間軸補間: Wav2Vec2フレーム(20ms) → スペクトログラムフレーム(10ms)
         5. 可視化: スペクトログラム + Grad-CAM重ね合わせ
         """
+        # 特徴量の前処理（訓練時と同じ処理を適用）
+        # 特徴量を正規化
+        features_normalized = (features - features.mean(dim=0, keepdim=True)) / (features.std(dim=0, keepdim=True) + 1e-8)
+        
+        # 最大長に合わせて調整
+        max_length = 1750  # 35秒分
+        if features_normalized.shape[0] > max_length:
+            features_normalized = features_normalized[:max_length]
+        elif features_normalized.shape[0] < max_length:
+            # パディング
+            padding = torch.zeros(max_length - features_normalized.shape[0], features_normalized.shape[1])
+            features_normalized = torch.cat([features_normalized, padding], dim=0)
+        
         # 特徴量をバッチ形式に変換 (Wav2Vec2出力: [seq_len, feature_dim])
-        features_batch = features.unsqueeze(0).to(device)  # [1, seq_len, feature_dim]
+        features_batch = features_normalized.unsqueeze(0).to(device)  # [1, seq_len, feature_dim]
         
         # 予測を取得
         with torch.no_grad():
-            logits = self.model(features_batch)
-            probs = torch.sigmoid(logits)
+            logits = self.model(features_batch)  # [1, 1]
+            probs = torch.sigmoid(logits).squeeze(1)  # [1] - 訓練時と同じ処理
             prediction = (probs > 0.5).long().item()
             confidence = probs.item()
+            
+            # デバッグ情報を出力（最初の数サンプルのみ）
+            if hasattr(self, '_debug_count'):
+                self._debug_count += 1
+            else:
+                self._debug_count = 1
+            
+            if self._debug_count <= 10:  # 最初の10サンプルのみデバッグ出力
+                print(f"Debug Sample {self._debug_count}:")
+                print(f"  UID: {uid}")
+                print(f"  True Label: {label}")
+                print(f"  Logits: {logits.item():.4f}")
+                print(f"  Probability: {confidence:.4f}")
+                print(f"  Prediction: {prediction}")
+                print(f"  Correct: {label == prediction}")
+                print()
         
         # Grad-CAMを生成（詳細版または簡易版）
         # Transformerの特定層（例: transformer.layers.0）での勾配 × 特徴マップ

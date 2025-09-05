@@ -46,3 +46,5 @@ modules/logs/*
 modules/wandb/*
 modules/venv/*
 modules/dataset/*
+
+models/original_transformer/*

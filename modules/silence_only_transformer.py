@@ -24,8 +24,8 @@ MODEL_NAME = "facebook/wav2vec2-base-960h"
 # ハイパーパラメータ
 BATCH_SIZE = 8  # ファインチューニング用に調整
 GRAD_ACCUM = 4
-EPOCHS = 5
-LR = 3e-5  # ファインチューニング用に学習率を下げる
+EPOCHS = 10
+LR = 1e-5  
 WARMUP_RATIO = 0.1
 
 # デバイス設定
@@ -577,6 +577,11 @@ if __name__ == "__main__":
     test_accuracies = []
     test_auc_rocs = []
     
+    # 最良のモデル追跡用
+    best_test_f1 = 0.0
+    best_test_model_state = None
+    best_fold = 0
+    
     for fold, (train_idx, val_idx) in enumerate(skf.split(train_data, train_labels)):
         print(f"\n### Fold {fold + 1} - {data_type.upper()} Features")
         
@@ -702,6 +707,13 @@ if __name__ == "__main__":
         test_f1_scores.append(test_f1)
         test_accuracies.append(float(test_acc))
         test_auc_rocs.append(test_auc)
+        
+        # 最良のテストF1スコアのモデルを追跡
+        if test_f1 > best_test_f1:
+            best_test_f1 = test_f1
+            best_test_model_state = model.state_dict().copy()
+            best_fold = fold + 1
+            print(f"New best test F1-score: {test_f1:.4f} (Fold {fold + 1})")
        
         wandb.log({
             f"{data_type}_fold_{fold+1}/test_loss": float(test_loss),
@@ -892,6 +904,62 @@ if __name__ == "__main__":
         "final_summary/training_samples": len(train_data),
         "final_summary/test_samples": len(test_data)
     })
+    
+    # 最良のモデルを保存
+    if best_test_model_state is not None:
+        # 最良のモデルを作成して保存
+        best_model = TransformerClassifier(input_dim=768).to(device)
+        best_model.load_state_dict(best_test_model_state)
+        
+        # モデル保存ディレクトリを作成
+        model_save_dir = f"models/{data_type}_transformer"
+        os.makedirs(model_save_dir, exist_ok=True)
+        
+        # モデルファイル名
+        model_filename = f"best_model_fold{best_fold}_test_f1_{best_test_f1:.4f}.pt"
+        model_path = os.path.join(model_save_dir, model_filename)
+        
+        # モデルを保存
+        torch.save({
+            'model_state_dict': best_model.state_dict(),
+            'model_config': {
+                'input_dim': 768,
+                'hidden_dim': 256,
+                'num_layers': 2,
+                'num_heads': 8,
+                'dropout': 0.1
+            },
+            'training_info': {
+                'data_type': data_type,
+                'best_fold': best_fold,
+                'best_test_f1': best_test_f1,
+                'best_test_accuracy': test_accuracies[best_fold - 1],
+                'best_test_auc': test_auc_rocs[best_fold - 1],
+                'total_folds': 5,
+                'training_samples': len(train_data),
+                'test_samples': len(test_data)
+            }
+        }, model_path)
+        
+        print(f"\n{'='*60}")
+        print(f"BEST MODEL SAVED")
+        print(f"{'='*60}")
+        print(f"Model saved to: {model_path}")
+        print(f"Best fold: {best_fold}")
+        print(f"Best test F1-score: {best_test_f1:.4f}")
+        print(f"Best test accuracy: {test_accuracies[best_fold - 1]:.4f}")
+        print(f"Best test AUC: {test_auc_rocs[best_fold - 1]:.4f}")
+        
+        # wandbに最良モデル情報をログ
+        wandb.log({
+            "best_model/fold": best_fold,
+            "best_model/test_f1": best_test_f1,
+            "best_model/test_accuracy": test_accuracies[best_fold - 1],
+            "best_model/test_auc": test_auc_rocs[best_fold - 1],
+            "best_model/model_path": model_path
+        })
+    else:
+        print("Warning: No best model found to save.")
     
     # wandb終了
     wandb.finish()
